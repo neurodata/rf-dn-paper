@@ -401,55 +401,6 @@ if __name__ == "__main__":
         str(args.data), str(args.labels)
     )
 
-    # convert selected label names to integers
-    labels_to_index = {
-            "Acoustic_guitar": 0,
-            "Applause": 1,
-            "Bark": 2,
-            "Bass_drum": 3,
-            "Burping_or_eructation": 4,
-            "Bus": 5,
-            "Cello": 6,
-            "Chime": 7,
-            "Clarinet": 8,
-            "Computer_keyboard": 9,
-            "Cough": 10,
-            "Cowbell": 11,
-            "Double_bass": 12,
-            "Drawer_open_or_close": 13,
-            "Electric_piano": 14,
-            "Fart": 15,
-            "Finger_snapping": 16,
-            "Fireworks": 17,
-            "Flute": 18,
-            "Glockenspiel": 19,
-            "Gong": 20,
-            "Gunshot_or_gunfire": 21,
-            "Harmonica": 22,
-            "Hi-hat": 23,
-            "Keys_jangling": 24,
-            "Knock": 25,
-            "Laughter": 26,
-            "Meow": 27,
-            "Microwave_oven": 28,
-            "Oboe": 29,
-            "Saxophone": 30,
-            "Scissors": 31,
-            "Shatter": 32,
-            "Snare_drum": 33,
-            "Squeak": 34,
-            "Tambourine": 35,
-            "Tearing": 36,
-            "Telephone": 37,
-            "Trumpet": 38,
-            "Violin_or_fiddle": 39,
-            "Writing": 40,
-        }
-
-    # encode labels to integers
-    get_labels = labels_chosen["label"].replace(labels_to_index).to_list()
-    labels_chosen = labels_chosen.reset_index()
-
     # data is normalized upon loading
     # load dataset
     x_spec, y_number = load_fsdk18(
@@ -473,8 +424,11 @@ if __name__ == "__main__":
     classes_space = list(combinations_45(nums, n_classes))
 
     # scale the data
+    x_spec = x_spec[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
+    # print(x_spec[:10800].shape)
     x_spec = scale(x_spec.reshape(5400, -1), axis=1).reshape(5400, 32, 32)
     y_number = np.array(y_number)
+    y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
 
     # need to take train/valid/test equally from each class
     trainx, testx, trainy, testy = train_test_split(
