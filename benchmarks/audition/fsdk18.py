@@ -401,6 +401,55 @@ if __name__ == "__main__":
         str(args.data), str(args.labels)
     )
 
+    # convert selected label names to integers
+    labels_to_index = {
+            "Acoustic_guitar": 0,
+            "Applause": 1,
+            "Bark": 2,
+            "Bass_drum": 3,
+            "Burping_or_eructation": 4,
+            "Bus": 5,
+            "Cello": 6,
+            "Chime": 7,
+            "Clarinet": 8,
+            "Computer_keyboard": 9,
+            "Cough": 10,
+            "Cowbell": 11,
+            "Double_bass": 12,
+            "Drawer_open_or_close": 13,
+            "Electric_piano": 14,
+            "Fart": 15,
+            "Finger_snapping": 16,
+            "Fireworks": 17,
+            "Flute": 18,
+            "Glockenspiel": 19,
+            "Gong": 20,
+            "Gunshot_or_gunfire": 21,
+            "Harmonica": 22,
+            "Hi-hat": 23,
+            "Keys_jangling": 24,
+            "Knock": 25,
+            "Laughter": 26,
+            "Meow": 27,
+            "Microwave_oven": 28,
+            "Oboe": 29,
+            "Saxophone": 30,
+            "Scissors": 31,
+            "Shatter": 32,
+            "Snare_drum": 33,
+            "Squeak": 34,
+            "Tambourine": 35,
+            "Tearing": 36,
+            "Telephone": 37,
+            "Trumpet": 38,
+            "Violin_or_fiddle": 39,
+            "Writing": 40,
+        }
+
+    # encode labels to integers
+    get_labels = labels_chosen["label"].replace(labels_to_index).to_list()
+    labels_chosen = labels_chosen.reset_index()
+
     # data is normalized upon loading
     # load dataset
     x_spec, y_number = load_fsdk18(
@@ -445,7 +494,7 @@ if __name__ == "__main__":
     fsdk18_test_labels = testy.copy()
 
     print("Running RF tuning \n")
-    # run_naive_rf()
+    run_naive_rf()
     print("Running CNN32 tuning \n")
     run_cnn32()
     print("Running CNN32_2l tuning \n")
