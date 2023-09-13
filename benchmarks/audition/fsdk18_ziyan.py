@@ -4,7 +4,7 @@ Coauthors: Haoyin Xu
            Madi Kusmanov
            Adway Kanhere
 """
-from toolbox import *
+from toolbox_ziyan import *
 import argparse
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -357,11 +357,11 @@ if __name__ == "__main__":
     classes_space = list(combinations_45(nums, n_classes))
 
     # scale the data
-    x_spec = x_spec[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
-    # print(x_spec[:10800].shape)
-    x_spec = scale(x_spec.reshape(5400, -1), axis=1).reshape(5400, 32, 32)
+    # x_spec = x_spec[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
+    # print(x_spec.shape)
+    x_spec = scale(x_spec.reshape(11073, -1), axis=1).reshape(11073, 32, 32)
     y_number = np.array(y_number)
-    y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
+    # y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
 
     # need to take train/valid/test equally from each class
     trainx, testx, trainy, testy = train_test_split(
@@ -380,9 +380,9 @@ if __name__ == "__main__":
     fsdk18_test_images = testx.reshape(-1, 32 * 32)
     fsdk18_test_labels = testy.copy()
 
-    print("shapes:", fsdk18_train_images.shape, fsdk18_train_labels.shape, fsdk18_test_images.shape, fsdk18_test_labels.shape)
+    # print("shapes:", fsdk18_train_images.shape, fsdk18_train_labels.shape, fsdk18_test_images.shape, fsdk18_test_labels.shape)
 
-    run_naive_rf()
+    # run_naive_rf()
     run_cnn32()
     run_cnn32_2l()
     run_cnn32_5l()
