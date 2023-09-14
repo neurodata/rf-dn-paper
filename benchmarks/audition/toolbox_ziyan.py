@@ -340,7 +340,7 @@ def run_rf_image_set(
 
     train_images = np.concatenate(image_ls)
     train_labels = np.concatenate(label_ls)
-    train_labels = train_labels[:len(train_images)] # Sometimes the shape of the train_labels would be differ from the train_images, so I just changed the shape of train_labels
+    train_labels = train_labels[:len(train_images)] # Sometimes the shape of the train_labels would be differ from the train_images, so I just changed the shape of train_labels Ziyan
     # print("rf shapes:", train_images.shape, train_labels.shape)
 
     # Obtain only test images and labels for selected classes
