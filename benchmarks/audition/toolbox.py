@@ -22,10 +22,10 @@ import torchaudio.transforms as trans
 import torchvision.models as models
 
 
-import ax
-from ax.plot.trace import optimization_trace_single_method
-from ax.service.managed_loop import optimize
-from ax.service.ax_client import AxClient
+# import ax
+# from ax.plot.trace import optimization_trace_single_method
+# from ax.service.managed_loop import optimize
+# from ax.service.ax_client import AxClient
 
 from ray import tune
 from ray.tune import report
@@ -58,7 +58,7 @@ def preprocessdataset(data_folder, labels_file):
 
     # select subset of data that only contains 300 samples per class
     labels_chosen = train_label[
-        train_label["label"].map(train_label["label"].value_counts() == 300)
+        train_label["label"].map(train_label["label"].value_counts() >= 300)
     ]
 
     training_files = []
@@ -350,9 +350,11 @@ def run_rf_image_set(
         label_ls.append(np.repeat(cls, len(partitions[i])))
         i += 1
 
+    print(len(image_ls))
     train_images = np.concatenate(image_ls)
     train_labels = np.concatenate(label_ls)
-    # train_labels = train_labels[:len(train_images)] # Sometimes the shape of the train_labels would be differ from the train_images, so I just changed the shape of train_labels Ziyan
+    train_labels = train_labels[:len(train_images)] 
+    # Sometimes the shape of the train_labels would be differ from the train_images, so I just changed the shape of train_labels Ziyan
 
     # Obtain only test images and labels for selected classes
     image_ls = []
