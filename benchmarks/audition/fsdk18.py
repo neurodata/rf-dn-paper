@@ -13,6 +13,8 @@ from sklearn.preprocessing import scale
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
+import warnings
+
 
 logger = logging.getLogger(tune.__name__)
 logger.setLevel(
@@ -424,11 +426,11 @@ if __name__ == "__main__":
     classes_space = list(combinations_45(nums, n_classes))
 
     # scale the data
-    x_spec = x_spec[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
-    # print(x_spec[:10800].shape)
+    # x_spec = x_spec[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
+    print(x_spec.shape)
     x_spec = scale(x_spec.reshape(5400, -1), axis=1).reshape(5400, 32, 32)
     y_number = np.array(y_number)
-    y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
+    # y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
 
     # need to take train/valid/test equally from each class
     trainx, testx, trainy, testy = train_test_split(
@@ -449,11 +451,11 @@ if __name__ == "__main__":
 
     print("Running RF tuning \n")
     run_naive_rf()
-    print("Running CNN32 tuning \n")
-    run_cnn32()
-    print("Running CNN32_2l tuning \n")
-    run_cnn32_2l()
-    print("Running CNN32_5l tuning \n")
-    run_cnn32_5l()
-    print("Running Resnet tuning \n")
-    run_resnet18()
+    # print("Running CNN32 tuning \n")
+    # run_cnn32()
+    # print("Running CNN32_2l tuning \n")
+    # run_cnn32_2l()
+    # print("Running CNN32_5l tuning \n")
+    # run_cnn32_5l()
+    # print("Running Resnet tuning \n")
+    # run_resnet18()
