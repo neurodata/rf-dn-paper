@@ -7,6 +7,8 @@ Coauthors: Haoyin Xu
 from toolbox import *
 import argparse
 import logging
+import warnings
+
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import scale
@@ -422,13 +424,14 @@ if __name__ == "__main__":
         prefix = args.m + "_class_mfcc/"
 
     # create list of classes with const random seed
+    # np.random.seed(10) # Set random seed by Ziyan.
     np.random.shuffle(nums)
     classes_space = list(combinations_45(nums, n_classes))
 
     # scale the data
     # x_spec = x_spec[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
-    print(x_spec.shape)
-    x_spec = scale(x_spec.reshape(5400, -1), axis=1).reshape(5400, 32, 32)
+    # print(x_spec.shape)
+    x_spec = scale(x_spec.reshape(7211, -1), axis=1).reshape(7211, 32, 32) # changed the reshape size by Ziyan
     y_number = np.array(y_number)
     # y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
 
