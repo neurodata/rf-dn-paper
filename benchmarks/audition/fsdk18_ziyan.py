@@ -25,6 +25,7 @@ def run_naive_rf():
     naive_rf_test_time = []
     navie_rf_test_probs = []
     navie_rf_test_labels = []
+    navie_rf_probs_labels = []
     for classes in classes_space:
 
         # cohen_kappa vs num training samples (naive_rf)
@@ -44,14 +45,17 @@ def run_naive_rf():
             naive_rf_ece.append(ece)
             naive_rf_train_time.append(train_time)
             naive_rf_test_time.append(test_time)
-            navie_rf_test_probs.append(test_probs)
-            navie_rf_test_labels.append(test_labels)
+            navie_rf_probs_labels.append(str(test_probs) + "," + str(test_labels))
+
 
     print("naive_rf finished")
     write_result(prefix + "naive_rf_kappa.txt", naive_rf_kappa)
     write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
     write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
     write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
+    write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
+
+
 
 
 def run_cnn32():
