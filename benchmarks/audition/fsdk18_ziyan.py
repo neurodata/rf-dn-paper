@@ -23,13 +23,15 @@ def run_naive_rf():
     naive_rf_ece = []
     naive_rf_train_time = []
     naive_rf_test_time = []
+    navie_rf_test_probs = []
+    navie_rf_test_labels = []
     for classes in classes_space:
 
         # cohen_kappa vs num training samples (naive_rf)
         for samples in samples_space:
             # train data
             RF = RandomForestClassifier(n_estimators=100, n_jobs=-1)
-            cohen_kappa, ece, train_time, test_time = run_rf_image_set(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_rf_image_set(
                 RF,
                 fsdk18_train_images,
                 fsdk18_train_labels,
@@ -42,6 +44,8 @@ def run_naive_rf():
             naive_rf_ece.append(ece)
             naive_rf_train_time.append(train_time)
             naive_rf_test_time.append(test_time)
+            navie_rf_test_probs.append(test_probs)
+            navie_rf_test_labels.append(test_labels)
 
     print("naive_rf finished")
     write_result(prefix + "naive_rf_kappa.txt", naive_rf_kappa)

@@ -372,6 +372,8 @@ def run_rf_image_set(
         get_ece(test_probs, test_preds, test_labels),
         train_time,
         test_time,
+        test_probs,
+        test_labels
     )
 
 
