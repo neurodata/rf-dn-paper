@@ -23,15 +23,13 @@ def run_naive_rf():
     naive_rf_ece = []
     naive_rf_train_time = []
     naive_rf_test_time = []
-    navie_rf_test_probs = []
-    navie_rf_test_labels = []
     navie_rf_probs_labels = []
     for classes in classes_space:
 
         # cohen_kappa vs num training samples (naive_rf)
         for samples in samples_space:
             # train data
-            RF = RandomForestClassifier(n_estimators=100, n_jobs=-1)
+            RF = RandomForestClassifier(n_estimators=100, max_depth = 10, n_jobs=-1)
             cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_rf_image_set(
                 RF,
                 fsdk18_train_images,
@@ -376,8 +374,8 @@ if __name__ == "__main__":
         x_spec,
         y_number,
         shuffle=True,
-        test_size=0.20,
-        train_size=0.80,
+        test_size=0.50,
+        train_size=0.50,
         stratify=y_number,
     )
 
@@ -388,10 +386,8 @@ if __name__ == "__main__":
     fsdk18_test_images = testx.reshape(-1, 32 * 32)
     fsdk18_test_labels = testy.copy()
 
-    # print("shapes:", fsdk18_train_images.shape, fsdk18_train_labels.shape, fsdk18_test_images.shape, fsdk18_test_labels.shape)
-
-    # run_naive_rf()
-    run_cnn32()
-    run_cnn32_2l()
-    run_cnn32_5l()
-    run_resnet18()
+    run_naive_rf()
+    # run_cnn32()
+    # run_cnn32_2l()
+    # run_cnn32_5l()
+    # run_resnet18()
