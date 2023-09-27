@@ -22,6 +22,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset
 import torchaudio
 import torchaudio.transforms as trans
+from torch.utils.data import DataLoader
 
 
 class FSDKaggle18Dataset(Dataset):
@@ -404,6 +405,7 @@ def run_dn_image_es(
     Peforms multiclass predictions for a deep network classifier with set number
     of samples and early stopping
     """
+    cnt = 0
     # define model
     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(dev)
@@ -423,6 +425,13 @@ def run_dn_image_es(
             # zero the parameter gradients
             optimizer.zero_grad()
 
+            # print(inputs.shape, labels.shape)
+            if inputs.shape[0] <= 2:
+                # inputs = torch.cat((inputs, inputs, inputs), dim = 0)
+                # labels = torch.cat((labels, labels, labels), dim = 0)
+                cnt += 1
+                continue
+
             # forward + backward + optimize
             outputs = model(inputs)
             loss = criterion(outputs, labels)
@@ -437,6 +446,10 @@ def run_dn_image_es(
                 # get the inputs
                 inputs = valid_data[i : i + batch].to(dev)
                 labels = valid_labels[i : i + batch].to(dev)
+                if inputs.shape[0] == 1:
+                    inputs = torch.cat((inputs, inputs, inputs), dim = 0)
+                    labels = torch.cat((labels, labels, labels), dim = 0)
+                    cnt += 1
 
                 # forward
                 outputs = model(inputs)
@@ -477,13 +490,16 @@ def run_dn_image_es(
     end_time = time.perf_counter()
     test_time = end_time - start_time
     test_labels = np.array(test_labels.tolist())
+    test_labels = np.unique(test_labels)
+    if cnt > 0:
+        print(cnt)
     return (
-        cohen_kappa_score(test_preds, test_labels),
+        accuracy_score(test_preds, test_labels),
         get_ece(test_probs, test_preds, test_labels),
         train_time,
         test_time,
-        # test_probs,
-        # test_labels
+        test_probs,
+        test_labels
     )
 
 

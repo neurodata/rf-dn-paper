@@ -61,6 +61,7 @@ def run_cnn32():
     cnn32_ece = []
     cnn32_train_time = []
     cnn32_test_time = []
+    cnn32_probs_labels = []
     for classes in classes_space:
 
         # cohen_kappa vs num training samples (cnn32)
@@ -85,7 +86,7 @@ def run_cnn32():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time = run_dn_image_es(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_dn_image_es(
                 cnn32,
                 train_images,
                 train_labels,
@@ -98,12 +99,15 @@ def run_cnn32():
             cnn32_ece.append(ece)
             cnn32_train_time.append(train_time)
             cnn32_test_time.append(test_time)
+            cnn32_probs_labels.append(str(test_probs) + "," + str(test_labels))
 
     print("cnn32 finished")
     write_result(prefix + "cnn32_kappa.txt", cnn32_kappa)
     write_result(prefix + "cnn32_ece.txt", cnn32_ece)
     write_result(prefix + "cnn32_train_time.txt", cnn32_train_time)
     write_result(prefix + "cnn32_test_time.txt", cnn32_test_time)
+    write_result(prefix + "cnn32_probs&labels.txt", cnn32_probs_labels)
+
 
 
 def run_cnn32_2l():
@@ -111,6 +115,7 @@ def run_cnn32_2l():
     cnn32_2l_ece = []
     cnn32_2l_train_time = []
     cnn32_2l_test_time = []
+    cnn32_2l_probs_labels = []
     for classes in classes_space:
 
         # cohen_kappa vs num training samples (cnn32_2l)
@@ -135,7 +140,7 @@ def run_cnn32_2l():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time = run_dn_image_es(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_dn_image_es(
                 cnn32_2l,
                 train_images,
                 train_labels,
@@ -148,12 +153,14 @@ def run_cnn32_2l():
             cnn32_2l_ece.append(ece)
             cnn32_2l_train_time.append(train_time)
             cnn32_2l_test_time.append(test_time)
+            cnn32_2l_probs_labels.append(str(test_probs) + "," + str(test_labels))
 
     print("cnn32_2l finished")
     write_result(prefix + "cnn32_2l_kappa.txt", cnn32_2l_kappa)
     write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
     write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
     write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
+    write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
 
 
 def run_cnn32_5l():
@@ -161,6 +168,7 @@ def run_cnn32_5l():
     cnn32_5l_ece = []
     cnn32_5l_train_time = []
     cnn32_5l_test_time = []
+    cnn32_5l_probs_labels = []
     for classes in classes_space:
 
         # cohen_kappa vs num training samples (cnn32_5l)
@@ -185,7 +193,7 @@ def run_cnn32_5l():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time = run_dn_image_es(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_dn_image_es(
                 cnn32_5l,
                 train_images,
                 train_labels,
@@ -198,12 +206,14 @@ def run_cnn32_5l():
             cnn32_5l_ece.append(ece)
             cnn32_5l_train_time.append(train_time)
             cnn32_5l_test_time.append(test_time)
+            cnn32_5l_probs_labels.append(str(test_probs) + "," + str(test_labels)) 
 
     print("cnn32_5l finished")
     write_result(prefix + "cnn32_5l_kappa.txt", cnn32_5l_kappa)
     write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
     write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
     write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
+    write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
 
 
 def run_resnet18():
@@ -211,6 +221,7 @@ def run_resnet18():
     resnet18_ece = []
     resnet18_train_time = []
     resnet18_test_time = []
+    resnet18_probs_labels = []
     for classes in classes_space:
 
         # cohen_kappa vs num training samples (resnet18)
@@ -243,7 +254,7 @@ def run_resnet18():
             valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
             test_images = torch.cat((test_images, test_images, test_images), dim=1)
 
-            cohen_kappa, ece, train_time, test_time = run_dn_image_es(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_dn_image_es(
                 resnet,
                 train_images,
                 train_labels,
@@ -256,12 +267,14 @@ def run_resnet18():
             resnet18_ece.append(ece)
             resnet18_train_time.append(train_time)
             resnet18_test_time.append(test_time)
+            resnet18_probs_labels.append(str(test_probs) + "," + str(test_labels))            
 
     print("resnet18 finished")
     write_result(prefix + "resnet18_kappa.txt", resnet18_kappa)
     write_result(prefix + "resnet18_ece.txt", resnet18_ece)
     write_result(prefix + "resnet18_train_time.txt", resnet18_train_time)
     write_result(prefix + "resnet18_test_time.txt", resnet18_test_time)
+    write_result(prefix + "resnet18_probs&labels.txt", resnet18_probs_labels)
 
 
 if __name__ == "__main__":
@@ -386,8 +399,14 @@ if __name__ == "__main__":
     fsdk18_test_images = testx.reshape(-1, 32 * 32)
     fsdk18_test_labels = testy.copy()
 
+
+    print("Running RF tuning \n")
     run_naive_rf()
-    # run_cnn32()
-    # run_cnn32_2l()
-    # run_cnn32_5l()
-    # run_resnet18()
+    print("Running CNN32 tuning \n")
+    run_cnn32()
+    print("Running CNN32_2l tuning \n")
+    run_cnn32_2l()
+    print("Running CNN32_5l tuning \n")
+    run_cnn32_5l()
+    print("Running Resnet tuning \n")
+    run_resnet18()
