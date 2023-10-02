@@ -43,12 +43,6 @@ def run_naive_rf():
             naive_rf_ece.append(ece)
             naive_rf_train_time.append(train_time)
             naive_rf_test_time.append(test_time)
-            # unique_labels = []
-            # for i in range(len(test_labels)):
-            #     if test_labels[i] not in unique_labels:
-            #         unique_labels.append(test_labels[i])
-            # unique_labels = sorted(unique_labels)
-            # navie_rf_probs_labels.append("Predict labels:" + str(unique_labels))
             classes = sorted(classes)
             navie_rf_probs_labels.append("Predict labels:" + str(classes))
             for i in range(len(test_probs)):
@@ -135,6 +129,11 @@ def run_cnn32():
     write_result(prefix + "cnn32_train_time.txt", cnn32_train_time)
     write_result(prefix + "cnn32_test_time.txt", cnn32_test_time)
     write_result(prefix + "cnn32_probs&labels.txt", cnn32_probs_labels)
+    write_json(prefix + "cnn32_kappa.json", cnn32_kappa)
+    write_json(prefix + "cnn32_ece.json", cnn32_ece)
+    write_json(prefix + "cnn32_train_time.json", cnn32_train_time)
+    write_json(prefix + "cnn32_test_time.json", cnn32_test_time)
+    write_json(prefix + "cnn32_probs&labels.json", cnn32_probs_labels)
 
 
 
@@ -181,10 +180,20 @@ def run_cnn32_2l():
             cnn32_2l_ece.append(ece)
             cnn32_2l_train_time.append(train_time)
             cnn32_2l_test_time.append(test_time)
-            classes = sorted(classes)
+
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
+
+            sorted_classes = sorted(classes)
             cnn32_2l_probs_labels.append("Predict labels:" + str(classes))
+
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+            
             for i in range(len(test_probs)):
-                cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]) + ", " + "Predictions:" + str(test_preds[i]))
+                cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]) + ", " + "Predictions:" + str(actual_preds[i]))
             cnn32_2l_probs_labels.append(" \n")
 
     print("cnn32_2l finished")
@@ -193,6 +202,11 @@ def run_cnn32_2l():
     write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
     write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
     write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
+    write_json(prefix + "cnn32_2l_kappa.json", cnn32_2l_kappa)
+    write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
+    write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
+    write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
+    write_json(prefix + "cnn32_2l_probs&labels.json", cnn32_2l_probs_labels)
 
 
 def run_cnn32_5l():
@@ -238,10 +252,20 @@ def run_cnn32_5l():
             cnn32_5l_ece.append(ece)
             cnn32_5l_train_time.append(train_time)
             cnn32_5l_test_time.append(test_time)
-            classes = sorted(classes)
+
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
+
+            sorted_classes = sorted(classes)
             cnn32_5l_probs_labels.append("Predict labels:" + str(classes))
+
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+
             for i in range(len(test_probs)):
-                cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]) + ", " + "Predictions:" + str(test_preds[i]))
+                cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]) + ", " + "Predictions:" + str(actual_preds[i]))
             cnn32_5l_probs_labels.append(" \n")
 
 
@@ -251,6 +275,11 @@ def run_cnn32_5l():
     write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
     write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
     write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
+    write_json(prefix + "cnn32_5l_kappa.json", cnn32_5l_kappa)
+    write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
+    write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
+    write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
+    write_json(prefix + "cnn32_5l_probs&labels.json", cnn32_5l_probs_labels)
 
 
 def run_resnet18():
@@ -304,10 +333,20 @@ def run_resnet18():
             resnet18_ece.append(ece)
             resnet18_train_time.append(train_time)
             resnet18_test_time.append(test_time)
-            classes = sorted(classes)
+
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
+
+            sorted_classes = sorted(classes)
             resnet18_probs_labels.append("Predict labels:" + str(classes))
+
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+
             for i in range(len(test_probs)):
-                resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]) + ", " + "Predictions:" + str(test_preds[i]))
+                resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]) + ", " + "Predictions:" + str(actual_preds[i]))
             resnet18_probs_labels.append(" \n")
 
 
@@ -317,6 +356,11 @@ def run_resnet18():
     write_result(prefix + "resnet18_train_time.txt", resnet18_train_time)
     write_result(prefix + "resnet18_test_time.txt", resnet18_test_time)
     write_result(prefix + "resnet18_probs&labels.txt", resnet18_probs_labels)
+    write_json(prefix + "resnet18_kappa.json", resnet18_kappa)
+    write_json(prefix + "resnet18_ece.json", resnet18_ece)
+    write_json(prefix + "resnet18_train_time.json", resnet18_train_time)
+    write_json(prefix + "resnet18_test_time.json", resnet18_test_time)
+    write_json(prefix + "resnet18_probs&labels.json", resnet18_probs_labels)
 
 
 if __name__ == "__main__":
