@@ -5,6 +5,8 @@ Coauthors: Haoyin Xu
            Jayanta Dey
            Adway Kanhere
 """
+
+
 import time
 import os
 import cv2
@@ -13,6 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import cohen_kappa_score, accuracy_score
+import json
 
 
 import torch
@@ -23,6 +26,9 @@ from torch.utils.data import Dataset
 import torchaudio
 import torchaudio.transforms as trans
 from torch.utils.data import DataLoader
+
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class FSDKaggle18Dataset(Dataset):
@@ -261,6 +267,10 @@ def write_result(filename, acc_ls):
     for acc in acc_ls:
         output.write(str(acc) + "\n")
 
+def write_json(filename, result):
+    """Writes results to JSON files"""
+    with open(filename, 'w') as json_file:
+        json.dump(result, json_file)
 
 def combinations_45(iterable, r):
     """Extracts 45 combinations from given list"""
@@ -385,7 +395,8 @@ def run_rf_image_set(
         train_time,
         test_time,
         test_probs,
-        test_labels
+        test_labels,
+        test_preds
     )
 
 
@@ -490,16 +501,14 @@ def run_dn_image_es(
     end_time = time.perf_counter()
     test_time = end_time - start_time
     test_labels = np.array(test_labels.tolist())
-    test_labels = np.unique(test_labels)
-    if cnt > 0:
-        print(cnt)
     return (
         accuracy_score(test_preds, test_labels),
         get_ece(test_probs, test_preds, test_labels),
         train_time,
         test_time,
         test_probs,
-        test_labels
+        test_labels,
+        test_preds
     )
 
 

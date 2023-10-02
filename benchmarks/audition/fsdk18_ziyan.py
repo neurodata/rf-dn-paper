@@ -30,7 +30,7 @@ def run_naive_rf():
         for samples in samples_space:
             # train data
             RF = RandomForestClassifier(n_estimators=100, max_depth = 10, n_jobs=-1)
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_rf_image_set(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
                 RF,
                 fsdk18_train_images,
                 fsdk18_train_labels,
@@ -43,8 +43,17 @@ def run_naive_rf():
             naive_rf_ece.append(ece)
             naive_rf_train_time.append(train_time)
             naive_rf_test_time.append(test_time)
-            navie_rf_probs_labels.append(str(test_probs) + "," + str(test_labels))
-
+            # unique_labels = []
+            # for i in range(len(test_labels)):
+            #     if test_labels[i] not in unique_labels:
+            #         unique_labels.append(test_labels[i])
+            # unique_labels = sorted(unique_labels)
+            # navie_rf_probs_labels.append("Predict labels:" + str(unique_labels))
+            classes = sorted(classes)
+            navie_rf_probs_labels.append("Predict labels:" + str(classes))
+            for i in range(len(test_probs)):
+                navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]) + ", " + "Predictions:" + str(test_preds[i]))
+            navie_rf_probs_labels.append(" \n")
 
     print("naive_rf finished")
     write_result(prefix + "naive_rf_kappa.txt", naive_rf_kappa)
@@ -52,6 +61,11 @@ def run_naive_rf():
     write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
     write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
     write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
+    write_json(prefix + "naive_rf_kappa.json", naive_rf_kappa)
+    write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
+    write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
+    write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
+    write_json(prefix + "naive_rf_probs&labels.json", navie_rf_probs_labels)
 
 
 
@@ -86,7 +100,7 @@ def run_cnn32():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_dn_image_es(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
                 cnn32,
                 train_images,
                 train_labels,
@@ -99,7 +113,21 @@ def run_cnn32():
             cnn32_ece.append(ece)
             cnn32_train_time.append(train_time)
             cnn32_test_time.append(test_time)
-            cnn32_probs_labels.append(str(test_probs) + "," + str(test_labels))
+
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
+
+            sorted_classes = sorted(classes)
+            cnn32_probs_labels.append("Predict labels:" + str(sorted_classes))
+            
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+
+            for i in range(len(test_probs)):
+                cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]) + ", " + "Predictions:" + str(int(actual_preds[i])))
+            cnn32_probs_labels.append(" \n")
 
     print("cnn32 finished")
     write_result(prefix + "cnn32_kappa.txt", cnn32_kappa)
@@ -140,7 +168,7 @@ def run_cnn32_2l():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_dn_image_es(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
                 cnn32_2l,
                 train_images,
                 train_labels,
@@ -153,7 +181,11 @@ def run_cnn32_2l():
             cnn32_2l_ece.append(ece)
             cnn32_2l_train_time.append(train_time)
             cnn32_2l_test_time.append(test_time)
-            cnn32_2l_probs_labels.append(str(test_probs) + "," + str(test_labels))
+            classes = sorted(classes)
+            cnn32_2l_probs_labels.append("Predict labels:" + str(classes))
+            for i in range(len(test_probs)):
+                cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]) + ", " + "Predictions:" + str(test_preds[i]))
+            cnn32_2l_probs_labels.append(" \n")
 
     print("cnn32_2l finished")
     write_result(prefix + "cnn32_2l_kappa.txt", cnn32_2l_kappa)
@@ -193,7 +225,7 @@ def run_cnn32_5l():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_dn_image_es(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
                 cnn32_5l,
                 train_images,
                 train_labels,
@@ -206,7 +238,12 @@ def run_cnn32_5l():
             cnn32_5l_ece.append(ece)
             cnn32_5l_train_time.append(train_time)
             cnn32_5l_test_time.append(test_time)
-            cnn32_5l_probs_labels.append(str(test_probs) + "," + str(test_labels)) 
+            classes = sorted(classes)
+            cnn32_5l_probs_labels.append("Predict labels:" + str(classes))
+            for i in range(len(test_probs)):
+                cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]) + ", " + "Predictions:" + str(test_preds[i]))
+            cnn32_5l_probs_labels.append(" \n")
+
 
     print("cnn32_5l finished")
     write_result(prefix + "cnn32_5l_kappa.txt", cnn32_5l_kappa)
@@ -254,7 +291,7 @@ def run_resnet18():
             valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
             test_images = torch.cat((test_images, test_images, test_images), dim=1)
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels = run_dn_image_es(
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
                 resnet,
                 train_images,
                 train_labels,
@@ -267,7 +304,12 @@ def run_resnet18():
             resnet18_ece.append(ece)
             resnet18_train_time.append(train_time)
             resnet18_test_time.append(test_time)
-            resnet18_probs_labels.append(str(test_probs) + "," + str(test_labels))            
+            classes = sorted(classes)
+            resnet18_probs_labels.append("Predict labels:" + str(classes))
+            for i in range(len(test_probs)):
+                resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]) + ", " + "Predictions:" + str(test_preds[i]))
+            resnet18_probs_labels.append(" \n")
+
 
     print("resnet18 finished")
     write_result(prefix + "resnet18_kappa.txt", resnet18_kappa)
@@ -402,11 +444,11 @@ if __name__ == "__main__":
 
     print("Running RF tuning \n")
     run_naive_rf()
-    print("Running CNN32 tuning \n")
-    run_cnn32()
-    print("Running CNN32_2l tuning \n")
-    run_cnn32_2l()
-    print("Running CNN32_5l tuning \n")
-    run_cnn32_5l()
-    print("Running Resnet tuning \n")
-    run_resnet18()
+    # print("Running CNN32 tuning \n")
+    # run_cnn32()
+    # print("Running CNN32_2l tuning \n")
+    # run_cnn32_2l()
+    # print("Running CNN32_5l tuning \n")
+    # run_cnn32_5l()
+    # print("Running Resnet tuning \n")
+    # run_resnet18()
