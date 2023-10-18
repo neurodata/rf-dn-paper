@@ -9,14 +9,17 @@ import argparse
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import scale
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+
 import pandas as pd
 import torchvision.models as models
 import warnings
 import random
+import pickle
 
 warnings.filterwarnings("ignore")
 
+np.random.seed(317)
 
 def run_naive_rf():
     naive_rf_kappa = []
@@ -24,14 +27,73 @@ def run_naive_rf():
     naive_rf_train_time = []
     naive_rf_test_time = []
     navie_rf_probs_labels = []
-    for classes in classes_space:
+    storage_dict = {}
 
+    # Grid search for best parameters
+
+    # param_grid = {
+    #     # 'n_estimators': range(100, 801, 100),
+    #     # 'max_depth': range(10, 21, 2),
+    #     # 'min_samples_split': range(2, 11, 2),
+    #     'min_samples_leaf': range(1, 11, 1),
+    #     # 'max_features': ['sqrt', 'log2', None]
+    # }
+    
+    # RF = RandomForestClassifier(n_estimators=600, max_depth=16,min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+
+    # grid_search = GridSearchCV(estimator=RF, param_grid=param_grid, cv=3)
+    # grid_search.fit(fsdk18_train_images, fsdk18_train_labels)
+
+    # best_params = grid_search.best_params_
+    # print("Best Hyperparameters:", best_params)
+
+    # results = pd.DataFrame(grid_search.cv_results_)
+    # min_samples_splits = results['param_min_samples_split'].unique()
+
+    # for min_samples_split in min_samples_splits:
+    #     subset = results[results['min_samples_split'] == min_samples_split]
+        
+    #     min_samples_leafs = subset['param_min_samples_leaf']
+    #     val_accuracies = subset['mean_test_score']
+        
+    #     plt.plot(min_samples_leafs, val_accuracies, marker='o')
+    #     plt.xlabel('min_samples_leaf')
+    #     plt.ylabel('Validation Accuracy')
+    #     plt.title(f'min_samples_splits = {min_samples_split}')
+    #     plt.grid(True)
+    #     plt.show()
+    
+    # plt.plot(results["param_n_estimators"], results["mean_test_score"])
+    # plt.xlabel("n_estimators")
+    # plt.ylabel("Accuracy")
+    # plt.title("Accuracy vs n_estimators")
+    # plt.legend()
+    # plt.grid()
+    # plt.savefig("n_estimators.png")
+
+    # RF = RandomForestClassifier(n_jobs=-1, random_state=317)
+    # RF.fit(fsdk18_train_images, fsdk18_train_labels)
+    # pred1 = RF.predict(fsdk18_valid_images)
+    # val_accuracy1 = accuracy_score(fsdk18_valid_labels, pred1)
+    # print("Accuracy_org:", val_accuracy1)
+
+    # RF_best = RandomForestClassifier(n_estimators=600, max_depth=16,min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    # RF_best.fit(fsdk18_train_images, fsdk18_train_labels)
+    # pred2 = RF_best.predict(fsdk18_valid_images)
+    # val_accuracy2 = accuracy_score(fsdk18_valid_labels, pred2) 
+    # print("Accuracy_best:", val_accuracy2)
+
+    for classes in classes_space:
+        d1 = {}
         # cohen_kappa vs num training samples (naive_rf)
         for samples in samples_space:
+            l3 = []            
             # train data
-            RF = RandomForestClassifier(n_estimators=100, max_depth = 10, n_jobs=-1)
+            # RF_best = RandomForestClassifier(n_jobs=-1, random_state=317)
+            RF_best = RandomForestClassifier(n_estimators=600, max_depth=16,min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+
             cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
-                RF,
+                RF_best,
                 fsdk18_train_images,
                 fsdk18_train_labels,
                 fsdk18_test_images,
@@ -43,25 +105,53 @@ def run_naive_rf():
             naive_rf_ece.append(ece)
             naive_rf_train_time.append(train_time)
             naive_rf_test_time.append(test_time)
+
             classes = sorted(classes)
-            navie_rf_probs_labels.append("Predict labels:" + str(classes))
+            navie_rf_probs_labels.append("Classes:" + str(classes))
+
+            navie_rf_probs_labels.append("Sample size:" + str(samples))
+
             for i in range(len(test_probs)):
-                navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]) + ", " + "Predictions:" + str(test_preds[i]))
+                navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]))
             navie_rf_probs_labels.append(" \n")
 
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), test_labels[i]])
+
+            d1[samples] = l3
+
+        storage_dict[tuple(sorted(classes))] = d1
+
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
+
+    for classes, class_data in storage_dict.items():
+
+        for samples, data in class_data.items():
+
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
+
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
+
+    with open(prefix +'rf_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+
+    # save the model
+    with open(prefix + 'naive_rf_org.pkl', 'wb') as f:
+        pickle.dump(RF_best, f)
+
     print("naive_rf finished")
-    write_result(prefix + "naive_rf_kappa.txt", naive_rf_kappa)
+    write_result(prefix + "naive_rf_kappa_best.txt", naive_rf_kappa)
     write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
     write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
     write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
     write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
-    write_json(prefix + "naive_rf_kappa.json", naive_rf_kappa)
+    write_json(prefix + "naive_rf_kappa_best.json", naive_rf_kappa)
     write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
     write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
     write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
-    write_json(prefix + "naive_rf_probs&labels.json", navie_rf_probs_labels)
-
-
 
 
 def run_cnn32():
@@ -70,10 +160,13 @@ def run_cnn32():
     cnn32_train_time = []
     cnn32_test_time = []
     cnn32_probs_labels = []
+    storage_dict = {}
     for classes in classes_space:
+        d1 = {}
 
         # cohen_kappa vs num training samples (cnn32)
         for samples in samples_space:
+            l3 = []
             # train data
             cnn32 = SimpleCNN32Filter(len(classes))
             # 3000 samples, 80% train is 2400 samples, 20% test
@@ -113,15 +206,43 @@ def run_cnn32():
                 actual_test_labels.append(int(classes[test_labels[i]]))
 
             sorted_classes = sorted(classes)
-            cnn32_probs_labels.append("Predict labels:" + str(sorted_classes))
+            cnn32_probs_labels.append("Classes:" + str(sorted_classes))
+
+            cnn32_probs_labels.append("Sample size:" + str(samples))
             
             actual_preds = []
             for i in range(len(test_preds)):
                 actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
             for i in range(len(test_probs)):
-                cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]) + ", " + "Predictions:" + str(int(actual_preds[i])))
+                cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
             cnn32_probs_labels.append(" \n")
+
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+
+            d1[samples] = l3
+
+        storage_dict[tuple(sorted(classes))] = d1
+
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
+    
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
+
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
+
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
+
+    with open(prefix +'cnn32_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+
+    # save the model
+    with open(prefix + 'cnn32.pkl', 'wb') as f:
+        pickle.dump(cnn32, f)
 
     print("cnn32 finished")
     write_result(prefix + "cnn32_kappa.txt", cnn32_kappa)
@@ -133,7 +254,6 @@ def run_cnn32():
     write_json(prefix + "cnn32_ece.json", cnn32_ece)
     write_json(prefix + "cnn32_train_time.json", cnn32_train_time)
     write_json(prefix + "cnn32_test_time.json", cnn32_test_time)
-    write_json(prefix + "cnn32_probs&labels.json", cnn32_probs_labels)
 
 
 
@@ -143,10 +263,13 @@ def run_cnn32_2l():
     cnn32_2l_train_time = []
     cnn32_2l_test_time = []
     cnn32_2l_probs_labels = []
+    storage_dict = {}
     for classes in classes_space:
+        d1 = {}
 
         # cohen_kappa vs num training samples (cnn32_2l)
         for samples in samples_space:
+            l3 = []
             # train data
             cnn32_2l = SimpleCNN32Filter2Layers(len(classes))
             # 3000 samples, 80% train is 2400 samples, 20% test
@@ -186,15 +309,43 @@ def run_cnn32_2l():
                 actual_test_labels.append(int(classes[test_labels[i]]))
 
             sorted_classes = sorted(classes)
-            cnn32_2l_probs_labels.append("Predict labels:" + str(classes))
+            cnn32_2l_probs_labels.append("Classes:" + str(classes))
+
+            cnn32_2l_probs_labels.append("Sample size:" + str(samples))
 
             actual_preds = []
             for i in range(len(test_preds)):
                 actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
             
             for i in range(len(test_probs)):
-                cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]) + ", " + "Predictions:" + str(actual_preds[i]))
+                cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
             cnn32_2l_probs_labels.append(" \n")
+
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+
+            d1[samples] = l3
+
+        storage_dict[tuple(sorted(classes))] = d1
+
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
+
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
+
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
+
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
+
+    with open(prefix + 'cnn32_2l_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+
+    # save the model
+    with open(prefix + 'cnn32_2l.pkl', 'wb') as f:
+        pickle.dump(cnn32_2l, f)
 
     print("cnn32_2l finished")
     write_result(prefix + "cnn32_2l_kappa.txt", cnn32_2l_kappa)
@@ -206,7 +357,6 @@ def run_cnn32_2l():
     write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
     write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
     write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
-    write_json(prefix + "cnn32_2l_probs&labels.json", cnn32_2l_probs_labels)
 
 
 def run_cnn32_5l():
@@ -215,10 +365,13 @@ def run_cnn32_5l():
     cnn32_5l_train_time = []
     cnn32_5l_test_time = []
     cnn32_5l_probs_labels = []
+    storage_dict = {}
     for classes in classes_space:
+        d1 = {}
 
         # cohen_kappa vs num training samples (cnn32_5l)
         for samples in samples_space:
+            l3 = []
             # train data
             cnn32_5l = SimpleCNN32Filter5Layers(len(classes))
             # 3000 samples, 80% train is 2400 samples, 20% test
@@ -258,16 +411,43 @@ def run_cnn32_5l():
                 actual_test_labels.append(int(classes[test_labels[i]]))
 
             sorted_classes = sorted(classes)
-            cnn32_5l_probs_labels.append("Predict labels:" + str(classes))
+            cnn32_5l_probs_labels.append("Classes:" + str(classes))
+
+            cnn32_5l_probs_labels.append("Sample size:" + str(samples))
 
             actual_preds = []
             for i in range(len(test_preds)):
                 actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
             for i in range(len(test_probs)):
-                cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]) + ", " + "Predictions:" + str(actual_preds[i]))
+                cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
             cnn32_5l_probs_labels.append(" \n")
 
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+
+            d1[samples] = l3
+
+        storage_dict[tuple(sorted(classes))] = d1
+
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
+
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
+
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
+
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
+
+    with open(prefix + 'cnn32_5l_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+
+    # save the model
+    with open(prefix + 'cnn32_5l.pkl', 'wb') as f:
+        pickle.dump(cnn32_5l, f)
 
     print("cnn32_5l finished")
     write_result(prefix + "cnn32_5l_kappa.txt", cnn32_5l_kappa)
@@ -279,7 +459,6 @@ def run_cnn32_5l():
     write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
     write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
     write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
-    write_json(prefix + "cnn32_5l_probs&labels.json", cnn32_5l_probs_labels)
 
 
 def run_resnet18():
@@ -288,10 +467,13 @@ def run_resnet18():
     resnet18_train_time = []
     resnet18_test_time = []
     resnet18_probs_labels = []
+    storage_dict = {}
     for classes in classes_space:
+        d1 = {}
 
         # cohen_kappa vs num training samples (resnet18)
         for samples in samples_space:
+            l3 = []
             resnet = models.resnet18(pretrained=True)
 
             num_ftrs = resnet.fc.in_features
@@ -339,15 +521,42 @@ def run_resnet18():
                 actual_test_labels.append(int(classes[test_labels[i]]))
 
             sorted_classes = sorted(classes)
-            resnet18_probs_labels.append("Predict labels:" + str(classes))
+            resnet18_probs_labels.append("Classes:" + str(classes))
+
+            resnet18_probs_labels.append("Sample size:" + str(samples))
 
             actual_preds = []
             for i in range(len(test_preds)):
                 actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
             for i in range(len(test_probs)):
-                resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]) + ", " + "Predictions:" + str(actual_preds[i]))
+                resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
             resnet18_probs_labels.append(" \n")
+
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+        
+            d1[samples] = l3
+        storage_dict[tuple(sorted(classes))] = d1
+
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
+
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
+
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
+
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
+
+    with open(prefix + 'resnet18_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+
+    # save the model
+    with open(prefix + 'resnet18.pkl', 'wb') as f:
+        pickle.dump(resnet, f)
 
 
     print("resnet18 finished")
@@ -360,7 +569,6 @@ def run_resnet18():
     write_json(prefix + "resnet18_ece.json", resnet18_ece)
     write_json(prefix + "resnet18_train_time.json", resnet18_train_time)
     write_json(prefix + "resnet18_test_time.json", resnet18_test_time)
-    write_json(prefix + "resnet18_probs&labels.json", resnet18_probs_labels)
 
 
 if __name__ == "__main__":
@@ -469,13 +677,20 @@ if __name__ == "__main__":
     # y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
 
     # need to take train/valid/test equally from each class
-    trainx, testx, trainy, testy = train_test_split(
+    trainx, remainx, trainy, remainy = train_test_split(
         x_spec,
         y_number,
         shuffle=True,
-        test_size=0.50,
-        train_size=0.50,
+        test_size=0.5,
         stratify=y_number,
+    )
+
+    testx, valx, testy, valy = train_test_split(
+        remainx,
+        remainy,
+        shuffle=True,
+        test_size=0.5,
+        stratify=remainy,
     )
 
     # 3000 samples, 80% train is 2400 samples, 20% test
@@ -484,6 +699,9 @@ if __name__ == "__main__":
     # reshape in 2d array
     fsdk18_test_images = testx.reshape(-1, 32 * 32)
     fsdk18_test_labels = testy.copy()
+    # validation set
+    fsdk18_valid_images = valx.reshape(-1, 32 * 32)
+    fsdk18_valid_labels = valy.copy()
 
 
     print("Running RF tuning \n")
