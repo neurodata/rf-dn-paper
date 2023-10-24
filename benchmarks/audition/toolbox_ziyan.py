@@ -417,7 +417,6 @@ def run_dn_image_es(
     Peforms multiclass predictions for a deep network classifier with set number
     of samples and early stopping
     """
-    cnt = 0
     # define model
     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(dev)
@@ -441,7 +440,6 @@ def run_dn_image_es(
             if inputs.shape[0] <= 2:
                 # inputs = torch.cat((inputs, inputs, inputs), dim = 0)
                 # labels = torch.cat((labels, labels, labels), dim = 0)
-                cnt += 1
                 continue
 
             # forward + backward + optimize
@@ -461,7 +459,6 @@ def run_dn_image_es(
                 if inputs.shape[0] == 1:
                     inputs = torch.cat((inputs, inputs, inputs), dim = 0)
                     labels = torch.cat((labels, labels, labels), dim = 0)
-                    cnt += 1
 
                 # forward
                 outputs = model(inputs)

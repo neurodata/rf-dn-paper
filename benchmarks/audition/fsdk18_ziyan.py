@@ -10,6 +10,9 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import scale
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+from sklearn.base import BaseEstimator
+from sklearn.preprocessing import LabelEncoder
+
 
 import pandas as pd
 import torchvision.models as models
@@ -32,11 +35,11 @@ def run_naive_rf():
     # Grid search for best parameters
 
     # param_grid = {
-    #     # 'n_estimators': range(100, 801, 100),
-    #     # 'max_depth': range(10, 21, 2),
-    #     # 'min_samples_split': range(2, 11, 2),
+    #     'n_estimators': range(100, 801, 100),
+    #     'max_depth': range(10, 21, 2),
+    #     'min_samples_split': range(2, 11, 2),
     #     'min_samples_leaf': range(1, 11, 1),
-    #     # 'max_features': ['sqrt', 'log2', None]
+    #     'max_features': ['sqrt', 'log2', None]
     # }
     
     # RF = RandomForestClassifier(n_estimators=600, max_depth=16,min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
@@ -48,28 +51,6 @@ def run_naive_rf():
     # print("Best Hyperparameters:", best_params)
 
     # results = pd.DataFrame(grid_search.cv_results_)
-    # min_samples_splits = results['param_min_samples_split'].unique()
-
-    # for min_samples_split in min_samples_splits:
-    #     subset = results[results['min_samples_split'] == min_samples_split]
-        
-    #     min_samples_leafs = subset['param_min_samples_leaf']
-    #     val_accuracies = subset['mean_test_score']
-        
-    #     plt.plot(min_samples_leafs, val_accuracies, marker='o')
-    #     plt.xlabel('min_samples_leaf')
-    #     plt.ylabel('Validation Accuracy')
-    #     plt.title(f'min_samples_splits = {min_samples_split}')
-    #     plt.grid(True)
-    #     plt.show()
-    
-    # plt.plot(results["param_n_estimators"], results["mean_test_score"])
-    # plt.xlabel("n_estimators")
-    # plt.ylabel("Accuracy")
-    # plt.title("Accuracy vs n_estimators")
-    # plt.legend()
-    # plt.grid()
-    # plt.savefig("n_estimators.png")
 
     # RF = RandomForestClassifier(n_jobs=-1, random_state=317)
     # RF.fit(fsdk18_train_images, fsdk18_train_labels)
@@ -77,7 +58,15 @@ def run_naive_rf():
     # val_accuracy1 = accuracy_score(fsdk18_valid_labels, pred1)
     # print("Accuracy_org:", val_accuracy1)
 
-    # RF_best = RandomForestClassifier(n_estimators=600, max_depth=16,min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    # RF_best = RandomForestClassifier(
+    #     n_estimators=best_params['n_estimators'],
+    #     max_depth=best_params['max_depth'],
+    #     min_samples_split=best_params['min_samples_split'],
+    #     min_samples_leaf=best_params['min_samples_leaf'],
+    #     max_features=best_params['max_features'],
+    #     n_jobs=-1,
+    #     random_state=317
+    # )    
     # RF_best.fit(fsdk18_train_images, fsdk18_train_labels)
     # pred2 = RF_best.predict(fsdk18_valid_images)
     # val_accuracy2 = accuracy_score(fsdk18_valid_labels, pred2) 
@@ -161,99 +150,170 @@ def run_cnn32():
     cnn32_test_time = []
     cnn32_probs_labels = []
     storage_dict = {}
-    for classes in classes_space:
-        d1 = {}
 
-        # cohen_kappa vs num training samples (cnn32)
-        for samples in samples_space:
-            l3 = []
-            # train data
-            cnn32 = SimpleCNN32Filter(len(classes))
-            # 3000 samples, 80% train is 2400 samples, 20% test
-            train_images = trainx.copy()
-            train_labels = trainy.copy()
-            # reshape in 4d array
-            test_images = testx.copy()
-            test_labels = testy.copy()
+    # Grid search for best hyperparameters
 
-            (
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-            ) = prepare_data(
-                train_images, train_labels, test_images, test_labels, samples, classes
-            )
+    cnn32 = SimpleCNN32Filter(num_classes=41)
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-                cnn32,
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-            )
-            cnn32_kappa.append(cohen_kappa)
-            cnn32_ece.append(ece)
-            cnn32_train_time.append(train_time)
-            cnn32_test_time.append(test_time)
+    class CNN32Wrapper(BaseEstimator):
+        def __init__(self, lr=0.1, batch_size=32, epochs=10):
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.model = cnn32.to(self.device)
+            self.lr = lr
+            self.batch_size = batch_size
+            self.epochs = epochs
 
-            actual_test_labels = []
-            for i in range(len(test_labels)):
-                actual_test_labels.append(int(classes[test_labels[i]]))
+        def fit(self, X, y):
+            X = X.reshape(-1, 1, 32, 32)
+            model = self.model
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+            for epoch in range(self.epochs):
+                model.train()
+                for i in range(0, len(X), self.batch_size):
+                    inputs = X[i : i + self.batch_size].to(self.device)
+                    labels = y[i : i + self.batch_size].to(self.device)
+                    optimizer.zero_grad()
+                    if inputs.shape[0] <= 2:
+                        continue
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
+                    loss.backward()
+                    optimizer.step()
+            return self
+        
+        def predict(self, X):
+            model = self.model
+            model.eval()
+            with torch.no_grad():
+                outputs = model(X.to(self.device))
+                _, predicted = torch.max(outputs.data, 1)
+                return predicted.cpu()
 
-            sorted_classes = sorted(classes)
-            cnn32_probs_labels.append("Classes:" + str(sorted_classes))
+        def score(self, X, y):
+            model = self.model
+            model.eval()
+            predictions = self.predict(X)
+            acc = accuracy_score(y, predictions)
+            return acc
 
-            cnn32_probs_labels.append("Sample size:" + str(samples))
-            
-            actual_preds = []
-            for i in range(len(test_preds)):
-                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
-
-            for i in range(len(test_probs)):
-                cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-            cnn32_probs_labels.append(" \n")
-
-            for i in range(len(test_probs)):
-                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
-
-            d1[samples] = l3
-
-        storage_dict[tuple(sorted(classes))] = d1
-
-    # switch the classes and sample sizes
-    switched_storage_dict = {}
+    param_grid={
+        "batch_size": [32, 64, 128, 256],
+        "lr": [0.001, 0.01, 0.1],
+        # "epochs": [10, 20, 30],
+        # "criterion": ["CrossEntropyLoss", "NLLLoss"],
+        # "optimizer": ["Adam", "SGD"],
+        }
     
-    for classes, class_data in storage_dict.items():
-        for samples, data in class_data.items():
+    grid_search = GridSearchCV(estimator=CNN32Wrapper(), param_grid=param_grid, cv=3)
 
-            if samples not in switched_storage_dict:
-                switched_storage_dict[samples] = {}
+    # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
+    train_images = torch.FloatTensor(fsdk18_train_images).unsqueeze(1)
+    train_labels = torch.LongTensor(fsdk18_train_labels)
 
-            if classes not in switched_storage_dict[samples]:
-                switched_storage_dict[samples][classes] = data
+    grid_search.fit(train_images, train_labels)
 
-    with open(prefix +'cnn32_switched_storage_dict.pkl', 'wb') as f:
-        pickle.dump(switched_storage_dict, f)
+    results = pd.DataFrame(grid_search.cv_results_)
+    print(results)
+    print(" ")
+    best_params = grid_search.best_params_
+    print(best_params)
 
-    # save the model
-    with open(prefix + 'cnn32.pkl', 'wb') as f:
-        pickle.dump(cnn32, f)
+    
 
-    print("cnn32 finished")
-    write_result(prefix + "cnn32_kappa.txt", cnn32_kappa)
-    write_result(prefix + "cnn32_ece.txt", cnn32_ece)
-    write_result(prefix + "cnn32_train_time.txt", cnn32_train_time)
-    write_result(prefix + "cnn32_test_time.txt", cnn32_test_time)
-    write_result(prefix + "cnn32_probs&labels.txt", cnn32_probs_labels)
-    write_json(prefix + "cnn32_kappa.json", cnn32_kappa)
-    write_json(prefix + "cnn32_ece.json", cnn32_ece)
-    write_json(prefix + "cnn32_train_time.json", cnn32_train_time)
-    write_json(prefix + "cnn32_test_time.json", cnn32_test_time)
+    # for classes in classes_space:
+    #     d1 = {}
+
+    #     # cohen_kappa vs num training samples (cnn32)
+    #     for samples in samples_space:
+    #         l3 = []
+    #         # train data
+    #         cnn32 = SimpleCNN32Filter(len(classes))
+    #         # 3000 samples, 80% train is 2400 samples, 20% test
+    #         train_images = trainx.copy()
+    #         train_labels = trainy.copy()
+    #         # reshape in 4d array
+    #         test_images = testx.copy()
+    #         test_labels = testy.copy()
+
+    #         (
+    #             train_images,
+    #             train_labels,
+    #             valid_images,
+    #             valid_labels,
+    #             test_images,
+    #             test_labels,
+    #         ) = prepare_data(
+    #             train_images, train_labels, test_images, test_labels, samples, classes
+    #         )
+
+    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+    #             cnn32,
+    #             train_images,
+    #             train_labels,
+    #             valid_images,
+    #             valid_labels,
+    #             test_images,
+    #             test_labels,
+    #         )
+    #         cnn32_kappa.append(cohen_kappa)
+    #         cnn32_ece.append(ece)
+    #         cnn32_train_time.append(train_time)
+    #         cnn32_test_time.append(test_time)
+
+    #         actual_test_labels = []
+    #         for i in range(len(test_labels)):
+    #             actual_test_labels.append(int(classes[test_labels[i]]))
+
+    #         sorted_classes = sorted(classes)
+    #         cnn32_probs_labels.append("Classes:" + str(sorted_classes))
+
+    #         cnn32_probs_labels.append("Sample size:" + str(samples))
+            
+    #         actual_preds = []
+    #         for i in range(len(test_preds)):
+    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+
+    #         for i in range(len(test_probs)):
+    #             cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+    #         cnn32_probs_labels.append(" \n")
+
+    #         for i in range(len(test_probs)):
+    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+
+    #         d1[samples] = l3
+
+    #     storage_dict[tuple(sorted(classes))] = d1
+
+    # # switch the classes and sample sizes
+    # switched_storage_dict = {}
+    
+    # for classes, class_data in storage_dict.items():
+    #     for samples, data in class_data.items():
+
+    #         if samples not in switched_storage_dict:
+    #             switched_storage_dict[samples] = {}
+
+    #         if classes not in switched_storage_dict[samples]:
+    #             switched_storage_dict[samples][classes] = data
+
+    # with open(prefix +'cnn32_switched_storage_dict.pkl', 'wb') as f:
+    #     pickle.dump(switched_storage_dict, f)
+
+    # # save the model
+    # with open(prefix + 'cnn32.pkl', 'wb') as f:
+    #     pickle.dump(cnn32, f)
+
+    # print("cnn32 finished")
+    # write_result(prefix + "cnn32_kappa.txt", cnn32_kappa)
+    # write_result(prefix + "cnn32_ece.txt", cnn32_ece)
+    # write_result(prefix + "cnn32_train_time.txt", cnn32_train_time)
+    # write_result(prefix + "cnn32_test_time.txt", cnn32_test_time)
+    # write_result(prefix + "cnn32_probs&labels.txt", cnn32_probs_labels)
+    # write_json(prefix + "cnn32_kappa.json", cnn32_kappa)
+    # write_json(prefix + "cnn32_ece.json", cnn32_ece)
+    # write_json(prefix + "cnn32_train_time.json", cnn32_train_time)
+    # write_json(prefix + "cnn32_test_time.json", cnn32_test_time)
 
 
 
@@ -703,11 +763,10 @@ if __name__ == "__main__":
     fsdk18_valid_images = valx.reshape(-1, 32 * 32)
     fsdk18_valid_labels = valy.copy()
 
-
-    print("Running RF tuning \n")
-    run_naive_rf()
-    # print("Running CNN32 tuning \n")
-    # run_cnn32()
+    # print("Running RF tuning \n")
+    # run_naive_rf()
+    print("Running CNN32 tuning \n")
+    run_cnn32()
     # print("Running CNN32_2l tuning \n")
     # run_cnn32_2l()
     # print("Running CNN32_5l tuning \n")
