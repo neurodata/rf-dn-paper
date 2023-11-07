@@ -412,6 +412,8 @@ def run_dn_image_es(
     epochs=30,
     lr=0.001,
     batch=60,
+    criterion=nn.CrossEntropyLoss(),
+    optimizer_name="sgd",
 ):
     """
     Peforms multiclass predictions for a deep network classifier with set number
@@ -421,8 +423,14 @@ def run_dn_image_es(
     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(dev)
     # loss and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
+    # criterion = nn.CrossEntropyLoss()
+    # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
+    if optimizer_name == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=lr)
+    elif optimizer_name == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+    else:
+        raise ValueError(f"Unknown optimizer: {optimizer_name}")
     # early stopping setup
     prev_loss = float("inf")
     flag = 0
