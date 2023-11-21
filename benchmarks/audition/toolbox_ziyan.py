@@ -413,7 +413,7 @@ def run_dn_image_es(
     lr=0.001,
     batch=60,
     criterion=nn.CrossEntropyLoss(),
-    optimizer_name="sgd",
+    optimizer_name="adam",
 ):
     """
     Peforms multiclass predictions for a deep network classifier with set number
