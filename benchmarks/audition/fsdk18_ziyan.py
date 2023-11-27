@@ -67,113 +67,117 @@ def run_naive_rf():
     # print("Search time:", search_time)
 
 
-    # Bayesian search for best parameters
-    start_time = time.perf_counter()
+    # # Bayesian search for best parameters
+    # start_time = time.perf_counter()
 
-    RF = RandomForestClassifier(n_jobs=-1, max_features=None, random_state=317)
+    # RF = RandomForestClassifier(n_jobs=-1, max_features=None, random_state=317)
 
-    param_space = {
-        'n_estimators': list(range(400, 601, 100)), 
-        'max_depth': list(range(2, 41, 2)), 
-    }
+    # param_space = {
+    #     'n_estimators': list(range(400, 601, 100)), 
+    #     'max_depth': list(range(2, 41, 2)), 
+    # }
 
-    Bayes = BayesSearchCV(
-        estimator=RF, 
-        search_spaces=param_space,
-        n_iter=50,  
-        cv=3,  
-        n_jobs=-1, 
-        verbose=1, 
-    )
+    # Bayes = BayesSearchCV(
+    #     estimator=RF, 
+    #     search_spaces=param_space,
+    #     n_iter=50,  
+    #     cv=3,  
+    #     n_jobs=-1, 
+    #     verbose=1, 
+    # )
 
-    Bayes.fit(fsdk18_train_images, fsdk18_train_labels)
+    # Bayes.fit(fsdk18_train_images, fsdk18_train_labels)
 
-    best_params = Bayes.best_params_
-    end_time = time.perf_counter()
-    search_time = end_time - start_time
-    print("Best Accuracy:", Bayes.best_score_)
-    print("Best Hyperparameters:", best_params)
-    print("Bayesian Search time:", search_time)
-
-
+    # best_params = Bayes.best_params_
+    # end_time = time.perf_counter()
+    # search_time = end_time - start_time
+    # print("Best Accuracy:", Bayes.best_score_)
+    # print("Best Hyperparameters:", best_params)
+    # print("Bayesian Search time:", search_time)
 
 
 
-    # for classes in classes_space:
-    #     d1 = {}
-    #     # cohen_kappa vs num training samples (naive_rf)
-    #     for samples in samples_space:
-    #         l3 = []            
-    #         # train data
 
-    #         # RF_best = RandomForestClassifier(n_jobs=-1, random_state=317)
 
-    #         # Best set of hyperparameters of 3 classes: 
-    #         RF_best = RandomForestClassifier(n_estimators=600, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    for classes in classes_space:
+        d1 = {}
+        # cohen_kappa vs num training samples (naive_rf)
+        for samples in samples_space:
+            l3 = []            
+            # train data
 
-    #         # Best set of hyperparameters of 8 classes: 
-    #         # RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+            # RF_best = RandomForestClassifier(n_jobs=-1, random_state=317)
 
-    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
-    #             RF_best,
-    #             fsdk18_train_images,
-    #             fsdk18_train_labels,
-    #             fsdk18_test_images,
-    #             fsdk18_test_labels,
-    #             samples,
-    #             classes,
-    #         )
-    #         naive_rf_kappa.append(cohen_kappa)
-    #         naive_rf_ece.append(ece)
-    #         naive_rf_train_time.append(train_time)
-    #         naive_rf_test_time.append(test_time)
+            # Best set of hyperparameters of 3 classes: 
+            # RF_best = RandomForestClassifier(n_estimators=600, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-    #         classes = sorted(classes)
-    #         navie_rf_probs_labels.append("Classes:" + str(classes))
+            # Best set of hyperparameters of 8 classes: 
+            RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-    #         navie_rf_probs_labels.append("Sample size:" + str(samples))
+            # Best set of hyperparameters of 20 classes:
+            # RF_best = RandomForestClassifier(n_estimators=100, max_depth=2, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-    #         for i in range(len(test_probs)):
-    #             navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]))
-    #         navie_rf_probs_labels.append(" \n")
 
-    #         for i in range(len(test_probs)):
-    #             l3.append([test_probs[i].tolist(), test_labels[i]])
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
+                RF_best,
+                fsdk18_train_images,
+                fsdk18_train_labels,
+                fsdk18_test_images,
+                fsdk18_test_labels,
+                samples,
+                classes,
+            )
+            naive_rf_kappa.append(cohen_kappa)
+            naive_rf_ece.append(ece)
+            naive_rf_train_time.append(train_time)
+            naive_rf_test_time.append(test_time)
 
-    #         d1[samples] = l3
+            classes = sorted(classes)
+            navie_rf_probs_labels.append("Classes:" + str(classes))
 
-    #     storage_dict[tuple(sorted(classes))] = d1
+            navie_rf_probs_labels.append("Sample size:" + str(samples))
 
-    # # switch the classes and sample sizes
-    # switched_storage_dict = {}
+            for i in range(len(test_probs)):
+                navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]))
+            navie_rf_probs_labels.append(" \n")
 
-    # for classes, class_data in storage_dict.items():
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), test_labels[i]])
 
-    #     for samples, data in class_data.items():
+            d1[samples] = l3
 
-    #         if samples not in switched_storage_dict:
-    #             switched_storage_dict[samples] = {}
+        storage_dict[tuple(sorted(classes))] = d1
 
-    #         if classes not in switched_storage_dict[samples]:
-    #             switched_storage_dict[samples][classes] = data
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
 
-    # with open(prefix +'rf_switched_storage_dict.pkl', 'wb') as f:
-    #     pickle.dump(switched_storage_dict, f)
+    for classes, class_data in storage_dict.items():
 
-    # # save the model
-    # with open(prefix + 'naive_rf_org.pkl', 'wb') as f:
-    #     pickle.dump(RF_best, f)
+        for samples, data in class_data.items():
 
-    # print("naive_rf finished")
-    # write_result(prefix + "naive_rf_kappa_best_1.txt", naive_rf_kappa)
-    # write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
-    # write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
-    # write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
-    # write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
-    # write_json(prefix + "naive_rf_kappa_best.json", naive_rf_kappa)
-    # write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
-    # write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
-    # write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
+
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
+
+    with open(prefix +'rf_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+
+    # save the model
+    with open(prefix + 'naive_rf_org.pkl', 'wb') as f:
+        pickle.dump(RF_best, f)
+
+    print("naive_rf finished")
+    write_result(prefix + "naive_rf_kappa_best.txt", naive_rf_kappa)
+    write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
+    write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
+    write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
+    write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
+    write_json(prefix + "naive_rf_kappa_best.json", naive_rf_kappa)
+    write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
+    write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
+    write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
 
 
 def run_cnn32():
@@ -383,8 +387,8 @@ def run_cnn32():
                 test_images,
                 test_labels,
                 optimizer_name="adam",
-                epochs=90,
-                batch=512,
+                epochs=100,
+                batch=1024,
                 lr=0.001,
             )
             cnn32_kappa.append(cohen_kappa)
@@ -436,7 +440,7 @@ def run_cnn32():
         pickle.dump(cnn32, f)
 
     print("cnn32 finished")
-    write_result(prefix + "cnn32_kappa_1.txt", cnn32_kappa)
+    write_result(prefix + "cnn32_kappa.txt", cnn32_kappa)
     write_result(prefix + "cnn32_ece.txt", cnn32_ece)
     write_result(prefix + "cnn32_train_time.txt", cnn32_train_time)
     write_result(prefix + "cnn32_test_time.txt", cnn32_test_time)
@@ -658,7 +662,7 @@ def run_cnn32_2l():
                 test_images,
                 test_labels,
                 optimizer_name="adam",
-                batch=128,
+                batch=1024,
                 epochs=100,
                 lr=0.001,
             )
@@ -711,7 +715,7 @@ def run_cnn32_2l():
         pickle.dump(cnn32_2l, f)
 
     print("cnn32_2l finished")
-    write_result(prefix + "cnn32_2l_kappa.txt", cnn32_2l_kappa)
+    write_result(prefix + "cnn32_2l_kappa_best.txt", cnn32_2l_kappa)
     write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
     write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
     write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
@@ -934,7 +938,7 @@ def run_cnn32_5l():
                 optimizer_name="sgd",
                 lr=0.001,
                 epochs=100,
-                batch=64,
+                batch=128,
             )
             cnn32_5l_kappa.append(cohen_kappa)
             cnn32_5l_ece.append(ece)
@@ -1262,6 +1266,11 @@ if __name__ == "__main__":
         train_label["label"].map(train_label["label"].value_counts() >= 0)
     ]
 
+    # # get the sample size of each class
+    # sample_size = labels_chosen.label.value_counts().to_dict()
+    # print("sample_sizes:", sample_size)
+    # print("labels_chosen:", labels_chosen.iloc[:, 1:2].value_counts())
+
     training_files = []
     for file in os.listdir(train_folder):
         for x in labels_chosen.fname.to_list():
@@ -1274,48 +1283,25 @@ if __name__ == "__main__":
 
     # convert selected label names to integers
     labels_to_index = {
-            "Acoustic_guitar": 0,
-            "Applause": 1,
-            "Bark": 2,
-            "Bass_drum": 3,
-            "Burping_or_eructation": 4,
-            "Bus": 5,
-            "Cello": 6,
-            "Chime": 7,
-            "Clarinet": 8,
-            "Computer_keyboard": 9,
-            "Cough": 10,
-            "Cowbell": 11,
-            "Double_bass": 12,
-            "Drawer_open_or_close": 13,
-            "Electric_piano": 14,
-            "Fart": 15,
-            "Finger_snapping": 16,
-            "Fireworks": 17,
-            "Flute": 18,
-            "Glockenspiel": 19,
-            "Gong": 20,
-            "Gunshot_or_gunfire": 21,
-            "Harmonica": 22,
-            "Hi-hat": 23,
-            "Keys_jangling": 24,
-            "Knock": 25,
-            "Laughter": 26,
-            "Meow": 27,
-            "Microwave_oven": 28,
-            "Oboe": 29,
-            "Saxophone": 30,
-            "Scissors": 31,
-            "Shatter": 32,
-            "Snare_drum": 33,
-            "Squeak": 34,
-            "Tambourine": 35,
-            "Tearing": 36,
-            "Telephone": 37,
-            "Trumpet": 38,
-            "Violin_or_fiddle": 39,
-            "Writing": 40,
-        }
+        "Acoustic_guitar": 0,
+        "Applause": 1,
+        "Bass_drum": 2,
+        "Cello": 3,
+        "Clarinet": 4,
+        "Double_bass": 5,
+        "Fart": 6,
+        "Fireworks": 7,
+        "Flute": 8,
+        "Hi-hat": 9,
+        "Laughter": 10,
+        "Saxophone": 11,
+        "Shatter": 12,
+        "Snare_drum": 13,
+        "Squeak": 14,
+        "Tearing": 15,
+        "Trumpet": 16,
+        "Violin_or_fiddle": 17,
+    }
 
     # encode labels to integers
     get_labels = labels_chosen["label"].replace(labels_to_index).to_list()
@@ -1377,17 +1363,19 @@ if __name__ == "__main__":
     fsdk18_valid_images = valx.reshape(-1, 32 * 32)
     fsdk18_valid_labels = valy.copy()
 
-    # print("Running RF tuning \n")
-    # run_naive_rf()
+    print("Running RF tuning \n")
+    run_naive_rf()
 
     # print("Running CNN32 tuning \n")
     # run_cnn32()
 
-    print("Running CNN32_2l tuning \n")
-    run_cnn32_2l()
+    # print("Running CNN32_2l tuning \n")
+    # run_cnn32_2l()
 
     # print("Running CNN32_5l tuning \n")
     # run_cnn32_5l()
 
     # print("Running Resnet tuning \n")
     # run_resnet18()
+    
+

@@ -72,45 +72,22 @@ class FSDKaggle18Dataset(Dataset):
         labels_to_index = {
             "Acoustic_guitar": 0,
             "Applause": 1,
-            "Bark": 2,
-            "Bass_drum": 3,
-            "Burping_or_eructation": 4,
-            "Bus": 5,
-            "Cello": 6,
-            "Chime": 7,
-            "Clarinet": 8,
-            "Computer_keyboard": 9,
-            "Cough": 10,
-            "Cowbell": 11,
-            "Double_bass": 12,
-            "Drawer_open_or_close": 13,
-            "Electric_piano": 14,
-            "Fart": 15,
-            "Finger_snapping": 16,
-            "Fireworks": 17,
-            "Flute": 18,
-            "Glockenspiel": 19,
-            "Gong": 20,
-            "Gunshot_or_gunfire": 21,
-            "Harmonica": 22,
-            "Hi-hat": 23,
-            "Keys_jangling": 24,
-            "Knock": 25,
-            "Laughter": 26,
-            "Meow": 27,
-            "Microwave_oven": 28,
-            "Oboe": 29,
-            "Saxophone": 30,
-            "Scissors": 31,
-            "Shatter": 32,
-            "Snare_drum": 33,
-            "Squeak": 34,
-            "Tambourine": 35,
-            "Tearing": 36,
-            "Telephone": 37,
-            "Trumpet": 38,
-            "Violin_or_fiddle": 39,
-            "Writing": 40,
+            "Bass_drum": 2,
+            "Cello": 3,
+            "Clarinet": 4,
+            "Double_bass": 5,
+            "Fart": 6,
+            "Fireworks": 7,
+            "Flute": 8,
+            "Hi-hat": 9,
+            "Laughter": 10,
+            "Saxophone": 11,
+            "Shatter": 12,
+            "Snare_drum": 13,
+            "Squeak": 14,
+            "Tearing": 15,
+            "Trumpet": 16,
+            "Violin_or_fiddle": 17,
         }
         get_labels = self.annotations["label"].replace(labels_to_index).to_list()
         y_value = get_labels[index1]
@@ -143,10 +120,12 @@ def load_fsdk18(path_recordings, labels_file, label_arr, feature_type="spectrogr
         )
 
         y_n = label_arr[get_label_location]  # label number
-        audio_data.append(x)
-        x_audio.append(x_stft_db)
-        x_audio_mini.append(x_stft_db_mini)
-        y_number.append(y_n)
+        # Check if the label is in the labels_to_index dictionary
+        if y_n in labels_to_index.values():
+            audio_data.append(x)
+            x_audio.append(x_stft_db)
+            x_audio_mini.append(x_stft_db_mini)
+            y_number.append(y_n)
 
     x_audio_mini = np.array(x_audio_mini)
     y_number = np.array(y_number).astype(int)
@@ -574,3 +553,24 @@ def prepare_data(
         test_images,
         test_labels,
     )
+
+labels_to_index = {
+    "Acoustic_guitar": 0,
+    "Applause": 1,
+    "Bass_drum": 2,
+    "Cello": 3,
+    "Clarinet": 4,
+    "Double_bass": 5,
+    "Fart": 6,
+    "Fireworks": 7,
+    "Flute": 8,
+    "Hi-hat": 9,
+    "Laughter": 10,
+    "Saxophone": 11,
+    "Shatter": 12,
+    "Snare_drum": 13,
+    "Squeak": 14,
+    "Tearing": 15,
+    "Trumpet": 16,
+    "Violin_or_fiddle": 17,
+}
