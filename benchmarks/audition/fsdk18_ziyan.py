@@ -587,35 +587,35 @@ def run_cnn32_2l():
                 # lr=0.001,
 
 
-    # Bayesian optimization for best hyperparameters
-    start_time = time.perf_counter()
-    param_space={
-        "batch_size": [32, 64, 128 ,256, 512, 1024],
-        "lr": [0.001, 0.01, 0.1],
-        "epochs": list(range(60, 121, 10)),
-        # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-        "optimizer_name": ["adam"],
-        }
+    # # Bayesian optimization for best hyperparameters
+    # start_time = time.perf_counter()
+    # param_space={
+    #     "batch_size": [32, 64, 128 ,256, 512, 1024],
+    #     "lr": [0.001, 0.01, 0.1],
+    #     "epochs": list(range(60, 121, 10)),
+    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
+    #     "optimizer_name": ["adam"],
+    #     }
 
-    Bayes = BayesSearchCV(
-        estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-        search_spaces=param_space,
-        n_iter=50,
-        cv=3,
-        verbose=1,
-        n_jobs=-1,
-    )
+    # Bayes = BayesSearchCV(
+    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
+    #     search_spaces=param_space,
+    #     n_iter=50,
+    #     cv=3,
+    #     verbose=1,
+    #     n_jobs=-1,
+    # )
 
-    Bayes.fit(train_images, train_labels)
+    # Bayes.fit(train_images, train_labels)
 
-    best_params = Bayes.best_params_
-    end_time = time.perf_counter()
-    search_time = end_time - start_time
-    print("Best Accuracy:", Bayes.best_score_)
-    print("Best Parameters:", best_params)
-    print("Bayesian Search Time:", search_time)
-    with open("Bayesian Search time 2l.txt", "w") as f:
-        f.write(str(search_time)) 
+    # best_params = Bayes.best_params_
+    # end_time = time.perf_counter()
+    # search_time = end_time - start_time
+    # print("Best Accuracy:", Bayes.best_score_)
+    # print("Best Parameters:", best_params)
+    # print("Bayesian Search Time:", search_time)
+    # with open("Bayesian Search time 2l.txt", "w") as f:
+    #     f.write(str(search_time)) 
    
 
 
@@ -623,103 +623,103 @@ def run_cnn32_2l():
 
 
 
-    # for classes in classes_space:
-    #     d1 = {}
+    for classes in classes_space:
+        d1 = {}
 
-    #     # cohen_kappa vs num training samples (cnn32_2l)
-    #     for samples in samples_space:
-    #         l3 = []
-    #         # train data
-    #         cnn32_2l = SimpleCNN32Filter2Layers(len(classes))
-    #         # 3000 samples, 80% train is 2400 samples, 20% test
-    #         train_images = trainx.copy()
-    #         train_labels = trainy.copy()
-    #         # reshape in 4d array
-    #         test_images = testx.copy()
-    #         test_labels = testy.copy()
+        # cohen_kappa vs num training samples (cnn32_2l)
+        for samples in samples_space:
+            l3 = []
+            # train data
+            cnn32_2l = SimpleCNN32Filter2Layers(len(classes))
+            # 3000 samples, 80% train is 2400 samples, 20% test
+            train_images = trainx.copy()
+            train_labels = trainy.copy()
+            # reshape in 4d array
+            test_images = testx.copy()
+            test_labels = testy.copy()
 
-    #         (
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #         ) = prepare_data(
-    #             train_images, train_labels, test_images, test_labels, samples, classes
-    #         )
+            (
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+            ) = prepare_data(
+                train_images, train_labels, test_images, test_labels, samples, classes
+            )
 
-    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-    #             cnn32_2l,
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #             optimizer_name="adam",
-    #             batch=128,
-    #             epochs=100,
-    #             lr=0.001,
-    #         )
-    #         cnn32_2l_kappa.append(cohen_kappa)
-    #         cnn32_2l_ece.append(ece)
-    #         cnn32_2l_train_time.append(train_time)
-    #         cnn32_2l_test_time.append(test_time)
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+                cnn32_2l,
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+                optimizer_name="adam",
+                batch=128,
+                epochs=100,
+                lr=0.001,
+            )
+            cnn32_2l_kappa.append(cohen_kappa)
+            cnn32_2l_ece.append(ece)
+            cnn32_2l_train_time.append(train_time)
+            cnn32_2l_test_time.append(test_time)
 
-    #         actual_test_labels = []
-    #         for i in range(len(test_labels)):
-    #             actual_test_labels.append(int(classes[test_labels[i]]))
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
 
-    #         sorted_classes = sorted(classes)
-    #         cnn32_2l_probs_labels.append("Classes:" + str(classes))
+            sorted_classes = sorted(classes)
+            cnn32_2l_probs_labels.append("Classes:" + str(classes))
 
-    #         cnn32_2l_probs_labels.append("Sample size:" + str(samples))
+            cnn32_2l_probs_labels.append("Sample size:" + str(samples))
 
-    #         actual_preds = []
-    #         for i in range(len(test_preds)):
-    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
             
-    #         for i in range(len(test_probs)):
-    #             cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-    #         cnn32_2l_probs_labels.append(" \n")
+            for i in range(len(test_probs)):
+                cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+            cnn32_2l_probs_labels.append(" \n")
 
-    #         for i in range(len(test_probs)):
-    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
 
-    #         d1[samples] = l3
+            d1[samples] = l3
 
-    #     storage_dict[tuple(sorted(classes))] = d1
+        storage_dict[tuple(sorted(classes))] = d1
 
-    # # switch the classes and sample sizes
-    # switched_storage_dict = {}
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
 
-    # for classes, class_data in storage_dict.items():
-    #     for samples, data in class_data.items():
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
 
-    #         if samples not in switched_storage_dict:
-    #             switched_storage_dict[samples] = {}
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
 
-    #         if classes not in switched_storage_dict[samples]:
-    #             switched_storage_dict[samples][classes] = data
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
 
-    # with open(prefix + 'cnn32_2l_switched_storage_dict.pkl', 'wb') as f:
-    #     pickle.dump(switched_storage_dict, f)
+    with open(prefix + 'cnn32_2l_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
 
-    # # save the model
-    # with open(prefix + 'cnn32_2l.pkl', 'wb') as f:
-    #     pickle.dump(cnn32_2l, f)
+    # save the model
+    with open(prefix + 'cnn32_2l.pkl', 'wb') as f:
+        pickle.dump(cnn32_2l, f)
 
-    # print("cnn32_2l finished")
-    # write_result(prefix + "cnn32_2l_kappa.txt", cnn32_2l_kappa)
-    # write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
-    # write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
-    # write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
-    # write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
-    # write_json(prefix + "cnn32_2l_kappa.json", cnn32_2l_kappa)
-    # write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
-    # write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
-    # write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
+    print("cnn32_2l finished")
+    write_result(prefix + "cnn32_2l_kappa.txt", cnn32_2l_kappa)
+    write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
+    write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
+    write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
+    write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
+    write_json(prefix + "cnn32_2l_kappa.json", cnn32_2l_kappa)
+    write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
+    write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
+    write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
 
 
 def run_cnn32_5l():
@@ -863,137 +863,137 @@ def run_cnn32_5l():
 
 
 
-    # Bayesian optimization for best hyperparameters
-    start_time = time.perf_counter()
-    param_space={
-        "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-        "lr": [0.001, 0.01, 0.1],
-        "epochs": list(range(60, 121, 10)),
-        # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-        "optimizer_name": ["adam", "sgd"],
-        }
+    # # Bayesian optimization for best hyperparameters
+    # start_time = time.perf_counter()
+    # param_space={
+    #     "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
+    #     "lr": [0.001, 0.01, 0.1],
+    #     "epochs": list(range(60, 121, 10)),
+    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
+    #     "optimizer_name": ["adam", "sgd"],
+    #     }
 
-    Bayes = BayesSearchCV(
-        estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-        search_spaces=param_space,
-        n_iter=50,
-        cv=3,
-        verbose=1,
-        n_jobs=-1,
-    )
+    # Bayes = BayesSearchCV(
+    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
+    #     search_spaces=param_space,
+    #     n_iter=50,
+    #     cv=3,
+    #     verbose=1,
+    #     n_jobs=-1,
+    # )
 
-    Bayes.fit(train_images, train_labels)
+    # Bayes.fit(train_images, train_labels)
 
-    best_params = Bayes.best_params_
-    end_time = time.perf_counter()
-    search_time = end_time - start_time
-    print("Best Accuracy:", Bayes.best_score_)
-    print("Best Parameters:", best_params)
-    print("Bayesian Search Time:", search_time)
-    with open("Bayesian Search time 5l.txt", "w") as f:
-        f.write(str(search_time)) 
-
-
+    # best_params = Bayes.best_params_
+    # end_time = time.perf_counter()
+    # search_time = end_time - start_time
+    # print("Best Accuracy:", Bayes.best_score_)
+    # print("Best Parameters:", best_params)
+    # print("Bayesian Search Time:", search_time)
+    # with open("Bayesian Search time 5l.txt", "w") as f:
+    #     f.write(str(search_time)) 
 
 
 
-    # for classes in classes_space:
-    #     d1 = {}
 
-    #     # cohen_kappa vs num training samples (cnn32_5l)
-    #     for samples in samples_space:
-    #         l3 = []
-    #         # train data
-    #         cnn32_5l = SimpleCNN32Filter5Layers(len(classes))
-    #         # 3000 samples, 80% train is 2400 samples, 20% test
-    #         train_images = trainx.copy()
-    #         train_labels = trainy.copy()
-    #         # reshape in 4d array
-    #         test_images = testx.copy()
-    #         test_labels = testy.copy()
 
-    #         (
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #         ) = prepare_data(
-    #             train_images, train_labels, test_images, test_labels, samples, classes
-    #         )
+    for classes in classes_space:
+        d1 = {}
 
-    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-    #             cnn32_5l,
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #             optimizer_name="sgd",
-    #             lr=0.001,
-    #             epochs=100,
-    #             batch=128,
-    #         )
-    #         cnn32_5l_kappa.append(cohen_kappa)
-    #         cnn32_5l_ece.append(ece)
-    #         cnn32_5l_train_time.append(train_time)
-    #         cnn32_5l_test_time.append(test_time)
+        # cohen_kappa vs num training samples (cnn32_5l)
+        for samples in samples_space:
+            l3 = []
+            # train data
+            cnn32_5l = SimpleCNN32Filter5Layers(len(classes))
+            # 3000 samples, 80% train is 2400 samples, 20% test
+            train_images = trainx.copy()
+            train_labels = trainy.copy()
+            # reshape in 4d array
+            test_images = testx.copy()
+            test_labels = testy.copy()
 
-    #         actual_test_labels = []
-    #         for i in range(len(test_labels)):
-    #             actual_test_labels.append(int(classes[test_labels[i]]))
+            (
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+            ) = prepare_data(
+                train_images, train_labels, test_images, test_labels, samples, classes
+            )
 
-    #         sorted_classes = sorted(classes)
-    #         cnn32_5l_probs_labels.append("Classes:" + str(classes))
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+                cnn32_5l,
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+                optimizer_name="sgd",
+                lr=0.001,
+                epochs=100,
+                batch=64,
+            )
+            cnn32_5l_kappa.append(cohen_kappa)
+            cnn32_5l_ece.append(ece)
+            cnn32_5l_train_time.append(train_time)
+            cnn32_5l_test_time.append(test_time)
 
-    #         cnn32_5l_probs_labels.append("Sample size:" + str(samples))
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
 
-    #         actual_preds = []
-    #         for i in range(len(test_preds)):
-    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+            sorted_classes = sorted(classes)
+            cnn32_5l_probs_labels.append("Classes:" + str(classes))
 
-    #         for i in range(len(test_probs)):
-    #             cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-    #         cnn32_5l_probs_labels.append(" \n")
+            cnn32_5l_probs_labels.append("Sample size:" + str(samples))
 
-    #         for i in range(len(test_probs)):
-    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
-    #         d1[samples] = l3
+            for i in range(len(test_probs)):
+                cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+            cnn32_5l_probs_labels.append(" \n")
 
-    #     storage_dict[tuple(sorted(classes))] = d1
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
 
-    # # switch the classes and sample sizes
-    # switched_storage_dict = {}
+            d1[samples] = l3
 
-    # for classes, class_data in storage_dict.items():
-    #     for samples, data in class_data.items():
+        storage_dict[tuple(sorted(classes))] = d1
 
-    #         if samples not in switched_storage_dict:
-    #             switched_storage_dict[samples] = {}
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
 
-    #         if classes not in switched_storage_dict[samples]:
-    #             switched_storage_dict[samples][classes] = data
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
 
-    # with open(prefix + 'cnn32_5l_switched_storage_dict.pkl', 'wb') as f:
-    #     pickle.dump(switched_storage_dict, f)
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
 
-    # # save the model
-    # with open(prefix + 'cnn32_5l.pkl', 'wb') as f:
-    #     pickle.dump(cnn32_5l, f)
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
 
-    # print("cnn32_5l finished")
-    # write_result(prefix + "cnn32_5l_kappa_best.txt", cnn32_5l_kappa)
-    # write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
-    # write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
-    # write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
-    # write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
-    # write_json(prefix + "cnn32_5l_kappa.json", cnn32_5l_kappa)
-    # write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
-    # write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
-    # write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
+    with open(prefix + 'cnn32_5l_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+
+    # save the model
+    with open(prefix + 'cnn32_5l.pkl', 'wb') as f:
+        pickle.dump(cnn32_5l, f)
+
+    print("cnn32_5l finished")
+    write_result(prefix + "cnn32_5l_kappa_best.txt", cnn32_5l_kappa)
+    write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
+    write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
+    write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
+    write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
+    write_json(prefix + "cnn32_5l_kappa.json", cnn32_5l_kappa)
+    write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
+    write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
+    write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
 
 
 def run_resnet18():
@@ -1346,7 +1346,7 @@ if __name__ == "__main__":
     # scale the data
     # x_spec = x_spec[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
     # print(x_spec.shape)
-    x_spec = scale(x_spec.reshape(11073, -1), axis=1).reshape(11073, 32, 32)
+    x_spec = scale(x_spec.reshape(len(x_spec), -1), axis=1).reshape(len(x_spec), 32, 32)
     y_number = np.array(y_number)
     # y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
 
@@ -1377,14 +1377,14 @@ if __name__ == "__main__":
     fsdk18_valid_images = valx.reshape(-1, 32 * 32)
     fsdk18_valid_labels = valy.copy()
 
-    print("Running RF tuning \n")
-    run_naive_rf()
+    # print("Running RF tuning \n")
+    # run_naive_rf()
 
     # print("Running CNN32 tuning \n")
     # run_cnn32()
 
-    # print("Running CNN32_2l tuning \n")
-    # run_cnn32_2l()
+    print("Running CNN32_2l tuning \n")
+    run_cnn32_2l()
 
     # print("Running CNN32_5l tuning \n")
     # run_cnn32_5l()
