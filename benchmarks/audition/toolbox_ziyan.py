@@ -330,20 +330,24 @@ def run_rf_image_set(
         label_ls.append(np.repeat(cls, len(partitions[i])))
         i += 1
 
-    min_samples = min([len(class_idx) for class_idx in image_ls])
 
-    even_image_ls = []
-    even_label_ls = []
+    # min_samples = min([len(class_idx) for class_idx in image_ls])
+    # if min_samples != 0:
+    #     even_image_ls = []
+    #     even_label_ls = []
 
-    for cls_images, cls_labels in zip(image_ls, label_ls):
-        idx = np.random.choice(len(cls_images), min_samples, replace=False)
-        even_image_ls.append(cls_images[idx])
-        even_label_ls.append(cls_labels[idx])
+    #     for cls_images, cls_labels in zip(image_ls, label_ls):
+    #         idx = np.random.choice(len(cls_images), min_samples, replace=False)
+    #         even_image_ls.append(cls_images[idx])
+    #         even_label_ls.append(cls_labels[idx])
 
-    train_images = np.concatenate(even_image_ls)
-    train_labels = np.concatenate(even_label_ls)
-    # train_labels = train_labels[:len(train_images)] # Sometimes the shape of the train_labels would be differ from the train_images, so I just changed the shape of train_labels Ziyan
-    # print("train shapes:", train_images.shape, train_labels.shape)
+
+
+    #     train_images = np.concatenate(even_image_ls)
+    #     train_labels = np.concatenate(even_label_ls)
+    # else:
+    train_images = np.concatenate(image_ls)
+    train_labels = np.concatenate(label_ls)
 
     # Obtain only test images and labels for selected classes
     image_ls = []
