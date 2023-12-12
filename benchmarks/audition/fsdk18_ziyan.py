@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_sc
 from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
 from skopt import BayesSearchCV
+from skopt.callbacks import DeadlineStopper
 from scipy.optimize import fmin
 
 import pandas as pd
@@ -34,149 +35,149 @@ def run_naive_rf():
     navie_rf_probs_labels = []
     storage_dict = {}
 
-    # # Grid search for best parameters
+    # Grid search for best parameters
 
-    # param_grid = {
-    #     'n_estimators': range(400, 1201, 100),
-    #     'max_depth': range(2, 21, 2),
-    #     # 'min_samples_split': range(2, 11, 2),
-    #     # 'min_samples_leaf': range(1, 11, 1),
-    #     # 'max_features': ['sqrt', 'log2', None]
-    # }
+    param_grid = {
+        'n_estimators': range(400, 901, 100),
+        'max_depth': range(2, 21, 2),
+        # 'min_samples_split': range(2, 11, 2),
+        # 'min_samples_leaf': range(1, 11, 1),
+        # 'max_features': ['sqrt', 'log2', None]
+    }
 
-    # start_time = time.perf_counter()
+    start_time = time.perf_counter()
     
-    # RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-    # grid_search = GridSearchCV(estimator=RF, param_grid=param_grid, cv=3)
-    # grid_search.fit(fsdk18_train_images, fsdk18_train_labels)
+    grid_search = GridSearchCV(estimator=RF, param_grid=param_grid, cv=3)
+    grid_search.fit(fsdk18_train_images, fsdk18_train_labels)
 
-    # end_time = time.perf_counter()
+    end_time = time.perf_counter()
 
-    # search_time = end_time - start_time
+    search_time = end_time - start_time
 
-    # results = pd.DataFrame(grid_search.cv_results_)
+    results = pd.DataFrame(grid_search.cv_results_)
 
-    # accuracy_scores = results['mean_test_score']
-    # for i, accuracy in enumerate(accuracy_scores):
-    #     print(f"HPs : {results['params'][i]} accuracy score is: {accuracy}")
-    # print(" ")
-    # best_params = grid_search.best_params_
-    # print("Best Accuracy:", grid_search.best_score_)
-    # print("Best Parameters:", best_params)
-    # print("Search time:", search_time)
-
-
-    # # Bayesian search for best parameters
-    # start_time = time.perf_counter()
-
-    # RF = RandomForestClassifier(n_jobs=-1, max_features=None, random_state=317)
-
-    # param_space = {
-    #     'n_estimators': list(range(400, 1201, 100)), 
-    #     'max_depth': list(range(2, 41, 2)), 
-    # }
-
-    # Bayes = BayesSearchCV(
-    #     estimator=RF, 
-    #     search_spaces=param_space,
-    #     n_iter=50,  
-    #     cv=3,  
-    #     n_jobs=-1, 
-    #     verbose=1, 
-    # )
-
-    # Bayes.fit(fsdk18_train_images, fsdk18_train_labels)
-
-    # best_params = Bayes.best_params_
-    # end_time = time.perf_counter()
-    # search_time = end_time - start_time
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Hyperparameters:", best_params)
-    # print("Bayesian Search time:", search_time)
+    accuracy_scores = results['mean_test_score']
+    for i, accuracy in enumerate(accuracy_scores):
+        print(f"HPs : {results['params'][i]} accuracy score is: {accuracy}")
+    print(" ")
+    best_params = grid_search.best_params_
+    print("Best Accuracy:", grid_search.best_score_)
+    print("Best Parameters:", best_params)
+    print("Search time:", search_time)
 
 
+    # Bayesian search for best parameters
+    start_time = time.perf_counter()
+
+    RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+
+    param_space = {
+        'n_estimators': list(range(400, 501, 100)), 
+        'max_depth': list(range(2, 21, 2)), 
+    }
+
+    Bayes = BayesSearchCV(
+        estimator=RF, 
+        search_spaces=param_space,
+        n_iter=50,  
+        cv=3,  
+        n_jobs=-1, 
+        verbose=1, 
+    )
+
+    Bayes.fit(fsdk18_train_images, fsdk18_train_labels)
+
+    best_params = Bayes.best_params_
+    end_time = time.perf_counter()
+    search_time = end_time - start_time
+    print("Best Accuracy:", Bayes.best_score_)
+    print("Best Hyperparameters:", best_params)
+    print("Bayesian Search time:", search_time)
 
 
 
-    for classes in classes_space:
-        d1 = {}
-        # cohen_kappa vs num training samples (naive_rf)
-        for samples in samples_space:
-            l3 = []            
-            # train data
 
-            # RF_best = RandomForestClassifier(n_jobs=-1, random_state=317)
 
-            # Best set of hyperparameters of 3 classes: 
-            # RF_best = RandomForestClassifier(n_estimators=600, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    # for classes in classes_space:
+    #     d1 = {}
+    #     # cohen_kappa vs num training samples (naive_rf)
+    #     for samples in samples_space:
+    #         l3 = []            
+    #         # train data
 
-            # Best set of hyperparameters of 8 classes: 
-            # RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    #         # RF_best = RandomForestClassifier(n_jobs=-1, random_state=317)
 
-            # Best set of hyperparameters of 15 classes:
-            RF_best = RandomForestClassifier(n_estimators=1200, max_depth=18, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    #         # Best set of hyperparameters of 3 classes: 
+    #         # RF_best = RandomForestClassifier(n_estimators=600, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
-                RF_best,
-                fsdk18_train_images,
-                fsdk18_train_labels,
-                fsdk18_test_images,
-                fsdk18_test_labels,
-                samples,
-                classes,
-            )
-            naive_rf_kappa.append(cohen_kappa)
-            naive_rf_ece.append(ece)
-            naive_rf_train_time.append(train_time)
-            naive_rf_test_time.append(test_time)
+    #         # Best set of hyperparameters of 8 classes: 
+    #         # RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-            classes = sorted(classes)
-            navie_rf_probs_labels.append("Classes:" + str(classes))
+    #         # Best set of hyperparameters of 15 classes:
+    #         RF_best = RandomForestClassifier(n_estimators=1200, max_depth=18, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-            navie_rf_probs_labels.append("Sample size:" + str(samples))
+    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
+    #             RF_best,
+    #             fsdk18_train_images,
+    #             fsdk18_train_labels,
+    #             fsdk18_test_images,
+    #             fsdk18_test_labels,
+    #             samples,
+    #             classes,
+    #         )
+    #         naive_rf_kappa.append(cohen_kappa)
+    #         naive_rf_ece.append(ece)
+    #         naive_rf_train_time.append(train_time)
+    #         naive_rf_test_time.append(test_time)
 
-            for i in range(len(test_probs)):
-                navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]))
-            navie_rf_probs_labels.append(" \n")
+    #         classes = sorted(classes)
+    #         navie_rf_probs_labels.append("Classes:" + str(classes))
 
-            for i in range(len(test_probs)):
-                l3.append([test_probs[i].tolist(), test_labels[i]])
+    #         navie_rf_probs_labels.append("Sample size:" + str(samples))
 
-            d1[samples] = l3
+    #         for i in range(len(test_probs)):
+    #             navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]))
+    #         navie_rf_probs_labels.append(" \n")
 
-        storage_dict[tuple(sorted(classes))] = d1
+    #         for i in range(len(test_probs)):
+    #             l3.append([test_probs[i].tolist(), test_labels[i]])
 
-    # switch the classes and sample sizes
-    switched_storage_dict = {}
+    #         d1[samples] = l3
 
-    for classes, class_data in storage_dict.items():
+    #     storage_dict[tuple(sorted(classes))] = d1
 
-        for samples, data in class_data.items():
+    # # switch the classes and sample sizes
+    # switched_storage_dict = {}
 
-            if samples not in switched_storage_dict:
-                switched_storage_dict[samples] = {}
+    # for classes, class_data in storage_dict.items():
 
-            if classes not in switched_storage_dict[samples]:
-                switched_storage_dict[samples][classes] = data
+    #     for samples, data in class_data.items():
 
-    with open(prefix +'rf_switched_storage_dict.pkl', 'wb') as f:
-        pickle.dump(switched_storage_dict, f)
+    #         if samples not in switched_storage_dict:
+    #             switched_storage_dict[samples] = {}
 
-    # save the model
-    with open(prefix + 'naive_rf_org.pkl', 'wb') as f:
-        pickle.dump(RF_best, f)
+    #         if classes not in switched_storage_dict[samples]:
+    #             switched_storage_dict[samples][classes] = data
 
-    print("naive_rf finished")
-    write_result(prefix + "naive_rf_kappa_best.txt", naive_rf_kappa)
-    write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
-    write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
-    write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
-    write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
-    write_json(prefix + "naive_rf_kappa_best.json", naive_rf_kappa)
-    write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
-    write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
-    write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
+    # with open(prefix +'rf_switched_storage_dict.pkl', 'wb') as f:
+    #     pickle.dump(switched_storage_dict, f)
+
+    # # save the model
+    # with open(prefix + 'naive_rf_org.pkl', 'wb') as f:
+    #     pickle.dump(RF_best, f)
+
+    # print("naive_rf finished")
+    # write_result(prefix + "naive_rf_kappa_best.txt", naive_rf_kappa)
+    # write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
+    # write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
+    # write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
+    # write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
+    # write_json(prefix + "naive_rf_kappa_best.json", naive_rf_kappa)
+    # write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
+    # write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
+    # write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
 
 
 def run_cnn32():
@@ -818,7 +819,7 @@ def run_cnn32_5l():
                         break
                     else:
                         max_epochs.append(self.epochs)
-            print(np.max(max_epochs))
+            # print(np.max(max_epochs))
             return self
         
         def predict(self, X):
@@ -1009,14 +1010,14 @@ def run_cnn32_5l():
 
     print("cnn32_5l finished")
     write_result(prefix + "cnn32_5l_kappa.txt", cnn32_5l_kappa)
-    write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
-    write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
-    write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
-    write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
-    write_json(prefix + "cnn32_5l_kappa.json", cnn32_5l_kappa)
-    write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
-    write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
-    write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
+    # write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
+    # write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
+    # write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
+    # write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
+    # write_json(prefix + "cnn32_5l_kappa.json", cnn32_5l_kappa)
+    # write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
+    # write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
+    # write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
 
 
 def run_resnet18():
@@ -1037,7 +1038,7 @@ def run_resnet18():
     resnet.fc = nn.Linear(num_ftrs, 18)
 
     class ResnetWrapper(BaseEstimator):
-        def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None, momentum=0.9, weight_decay=0.0001):
+        def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.model = resnet.to(self.device)
             self.lr = lr
@@ -1047,13 +1048,13 @@ def run_resnet18():
             self.optimizer_name = optimizer_name
             self.Valid_X = Valid_X
             self.Valid_y = Valid_y
-            self.momentum = momentum
-            self.weight_decay = weight_decay
+            # self.momentum = momentum
+            # self.weight_decay = weight_decay
 
             if optimizer_name == 'sgd':
-                self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=self.weight_decay)
+                self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
             elif optimizer_name == 'adam':
-                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=self.weight_decay)
+                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
             else:
                 raise ValueError(f"Unknown optimizer: {optimizer_name}")
 
@@ -1105,7 +1106,7 @@ def run_resnet18():
                         break
                     else:
                         max_epochs.append(self.epochs)
-            print(np.max(max_epochs))
+            # print(np.max(max_epochs))
             return self
         
         def predict(self, X):
@@ -1163,37 +1164,39 @@ def run_resnet18():
     # print("Best Parameters:", best_params)
     # print("Grid Search Time:", search_time)
 
-    # # Bayesian optimization for best hyperparameters
-    # start_time = time.perf_counter()
-    # param_space={
-    #     "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-    #     "lr": [0.001, 0.01, 0.1],
-    #     "epochs": list(range(60, 121, 10)),
-    #     "momentum": [0.7, 0.8, 0.9, 0.95, 0.99],
-    #     "weight_decay": [1e-4, 1e-5, 1e-6],
-    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-    #     # "optimizer_name": ["adam", "sgd"],
-    #     }
+    # Bayesian optimization for best hyperparameters
+    time_limit = 7200 # 2 hours  
+    deadline_stopper = DeadlineStopper(time_limit)
+    start_time = time.perf_counter()
+    param_space={
+        "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
+        "lr": [0.001, 0.01, 0.1],
+        "epochs": list(range(60, 121, 10)),
+        # "momentum": [0.7, 0.8, 0.9, 0.95, 0.99],
+        # "weight_decay": [1e-4, 1e-5, 1e-6],
+        # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
+        # "optimizer_name": ["adam", "sgd"],
+        }
 
-    # Bayes = BayesSearchCV(
-    #     estimator=ResnetWrapper(Valid_X=valid_images, Valid_y=valid_labels),
-    #     search_spaces=param_space,
-    #     n_iter=50,
-    #     cv=3,
-    #     verbose=1,
-    #     n_jobs=-1,
-    # )
+    Bayes = BayesSearchCV(
+        estimator=ResnetWrapper(Valid_X=valid_images, Valid_y=valid_labels),
+        search_spaces=param_space,
+        n_iter=50,
+        cv=3,
+        verbose=1,
+        n_jobs=-1,
+    )
 
-    # Bayes.fit(train_images, train_labels)
+    Bayes.fit(train_images, train_labels, callback=deadline_stopper)
 
-    # best_params = Bayes.best_params_
-    # end_time = time.perf_counter()
-    # search_time = end_time - start_time
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Parameters:", best_params)
-    # print("Bayesian Search Time:", search_time)
-    # with open("Bayesian Search time res.txt", "w") as f:
-    #     f.write(str(search_time)) 
+    best_params = Bayes.best_params_
+    end_time = time.perf_counter()
+    search_time = end_time - start_time
+    print("Best Accuracy:", Bayes.best_score_)
+    print("Best Parameters:", best_params)
+    print("Bayesian Search Time:", search_time)
+    with open("Bayesian Search time res.txt", "w") as f:
+        f.write(str(search_time)) 
 
 
     ### Best set of hyperparameters for 3 classes:L
@@ -1205,111 +1208,111 @@ def run_resnet18():
 
 
 
-    for classes in classes_space:
-        d1 = {}
+    # for classes in classes_space:
+    #     d1 = {}
 
-        # cohen_kappa vs num training samples (resnet18)
-        for samples in samples_space:
-            l3 = []
-            resnet = models.resnet18(pretrained=True)
+    #     # cohen_kappa vs num training samples (resnet18)
+    #     for samples in samples_space:
+    #         l3 = []
+    #         resnet = models.resnet18(pretrained=True)
 
-            num_ftrs = resnet.fc.in_features
-            resnet.fc = nn.Linear(num_ftrs, len(classes))
-            # train data
-            # 3000 samples, 80% train is 2400 samples, 20% test
-            train_images = trainx.copy()
-            train_labels = trainy.copy()
-            # reshape in 4d array
-            test_images = testx.copy()
-            test_labels = testy.copy()
+    #         num_ftrs = resnet.fc.in_features
+    #         resnet.fc = nn.Linear(num_ftrs, len(classes))
+    #         # train data
+    #         # 3000 samples, 80% train is 2400 samples, 20% test
+    #         train_images = trainx.copy()
+    #         train_labels = trainy.copy()
+    #         # reshape in 4d array
+    #         test_images = testx.copy()
+    #         test_labels = testy.copy()
 
-            (
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-            ) = prepare_data(
-                train_images, train_labels, test_images, test_labels, samples, classes
-            )
+    #         (
+    #             train_images,
+    #             train_labels,
+    #             valid_images,
+    #             valid_labels,
+    #             test_images,
+    #             test_labels,
+    #         ) = prepare_data(
+    #             train_images, train_labels, test_images, test_labels, samples, classes
+    #         )
 
-            # need to duplicate channel because batch norm cant have 1 channel images
-            train_images = torch.cat((train_images, train_images, train_images), dim=1)
-            valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
-            test_images = torch.cat((test_images, test_images, test_images), dim=1)
+    #         # need to duplicate channel because batch norm cant have 1 channel images
+    #         train_images = torch.cat((train_images, train_images, train_images), dim=1)
+    #         valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
+    #         test_images = torch.cat((test_images, test_images, test_images), dim=1)
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-                resnet,
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-                epochs=10,
-                lr=1,
-                batch=16,
-                optimizer_name="adam",
-            )
-            resnet18_kappa.append(cohen_kappa)
-            resnet18_ece.append(ece)
-            resnet18_train_time.append(train_time)
-            resnet18_test_time.append(test_time)
+    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+    #             resnet,
+    #             train_images,
+    #             train_labels,
+    #             valid_images,
+    #             valid_labels,
+    #             test_images,
+    #             test_labels,
+    #             epochs=10,
+    #             lr=1,
+    #             batch=16,
+    #             optimizer_name="adam",
+    #         )
+    #         resnet18_kappa.append(cohen_kappa)
+    #         resnet18_ece.append(ece)
+    #         resnet18_train_time.append(train_time)
+    #         resnet18_test_time.append(test_time)
 
-            actual_test_labels = []
-            for i in range(len(test_labels)):
-                actual_test_labels.append(int(classes[test_labels[i]]))
+    #         actual_test_labels = []
+    #         for i in range(len(test_labels)):
+    #             actual_test_labels.append(int(classes[test_labels[i]]))
 
-            sorted_classes = sorted(classes)
-            resnet18_probs_labels.append("Classes:" + str(classes))
+    #         sorted_classes = sorted(classes)
+    #         resnet18_probs_labels.append("Classes:" + str(classes))
 
-            resnet18_probs_labels.append("Sample size:" + str(samples))
+    #         resnet18_probs_labels.append("Sample size:" + str(samples))
 
-            actual_preds = []
-            for i in range(len(test_preds)):
-                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+    #         actual_preds = []
+    #         for i in range(len(test_preds)):
+    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
-            for i in range(len(test_probs)):
-                resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-            resnet18_probs_labels.append(" \n")
+    #         for i in range(len(test_probs)):
+    #             resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+    #         resnet18_probs_labels.append(" \n")
 
-            for i in range(len(test_probs)):
-                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+    #         for i in range(len(test_probs)):
+    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
         
-            d1[samples] = l3
-        storage_dict[tuple(sorted(classes))] = d1
+    #         d1[samples] = l3
+    #     storage_dict[tuple(sorted(classes))] = d1
 
-    # switch the classes and sample sizes
-    switched_storage_dict = {}
+    # # switch the classes and sample sizes
+    # switched_storage_dict = {}
 
-    for classes, class_data in storage_dict.items():
-        for samples, data in class_data.items():
+    # for classes, class_data in storage_dict.items():
+    #     for samples, data in class_data.items():
 
-            if samples not in switched_storage_dict:
-                switched_storage_dict[samples] = {}
+    #         if samples not in switched_storage_dict:
+    #             switched_storage_dict[samples] = {}
 
-            if classes not in switched_storage_dict[samples]:
-                switched_storage_dict[samples][classes] = data
+    #         if classes not in switched_storage_dict[samples]:
+    #             switched_storage_dict[samples][classes] = data
 
-    with open(prefix + 'resnet18_switched_storage_dict.pkl', 'wb') as f:
-        pickle.dump(switched_storage_dict, f)
+    # with open(prefix + 'resnet18_switched_storage_dict.pkl', 'wb') as f:
+    #     pickle.dump(switched_storage_dict, f)
 
-    # save the model
-    with open(prefix + 'resnet18.pkl', 'wb') as f:
-        pickle.dump(resnet, f)
+    # # save the model
+    # with open(prefix + 'resnet18.pkl', 'wb') as f:
+    #     pickle.dump(resnet, f)
 
 
-    print("resnet18 finished")
-    write_result(prefix + "resnet18_kappa.txt", resnet18_kappa)
-    write_result(prefix + "resnet18_ece.txt", resnet18_ece)
-    write_result(prefix + "resnet18_train_time.txt", resnet18_train_time)
-    write_result(prefix + "resnet18_test_time.txt", resnet18_test_time)
-    write_result(prefix + "resnet18_probs&labels.txt", resnet18_probs_labels)
-    write_json(prefix + "resnet18_kappa.json", resnet18_kappa)
-    write_json(prefix + "resnet18_ece.json", resnet18_ece)
-    write_json(prefix + "resnet18_train_time.json", resnet18_train_time)
-    write_json(prefix + "resnet18_test_time.json", resnet18_test_time)
+    # print("resnet18 finished")
+    # write_result(prefix + "resnet18_kappa.txt", resnet18_kappa)
+    # write_result(prefix + "resnet18_ece.txt", resnet18_ece)
+    # write_result(prefix + "resnet18_train_time.txt", resnet18_train_time)
+    # write_result(prefix + "resnet18_test_time.txt", resnet18_test_time)
+    # write_result(prefix + "resnet18_probs&labels.txt", resnet18_probs_labels)
+    # write_json(prefix + "resnet18_kappa.json", resnet18_kappa)
+    # write_json(prefix + "resnet18_ece.json", resnet18_ece)
+    # write_json(prefix + "resnet18_train_time.json", resnet18_train_time)
+    # write_json(prefix + "resnet18_test_time.json", resnet18_test_time)
 
 
 if __name__ == "__main__":
@@ -1433,13 +1436,13 @@ if __name__ == "__main__":
     # print("Running CNN32 tuning \n")
     # run_cnn32()
 
-    print("Running CNN32_2l tuning \n")
-    run_cnn32_2l()
+    # print("Running CNN32_2l tuning \n")
+    # run_cnn32_2l()
 
     # print("Running CNN32_5l tuning \n")
     # run_cnn32_5l()
 
-    # print("Running Resnet tuning \n")
-    # run_resnet18()
+    print("Running Resnet tuning \n")
+    run_resnet18()
     
 
