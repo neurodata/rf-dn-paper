@@ -16,6 +16,7 @@ from sklearn.preprocessing import StandardScaler
 from skopt import BayesSearchCV
 from skopt.callbacks import DeadlineStopper
 from scipy.optimize import fmin
+import xgboost as xgb
 
 import pandas as pd
 import torchvision.models as models
@@ -26,6 +27,88 @@ import pickle
 warnings.filterwarnings("ignore")
 
 np.random.seed(317)
+
+def run_GBT():
+    gbt_kappa = []
+    gbt_ece = []
+    gbt_train_time = []
+    gbt_test_time = []
+    gbt_probs_labels = []
+    storage_dict = {}
+    #grid search
+    #classes
+    for classes in classes_space:
+        # print(classes)
+        d1 = {}
+        # cohen_kappa vs num training samples (gbt)
+        for samples in samples_space:
+            l3 = []
+            # train data
+            # print("init GBT model")
+            gbt_model = xgb.XGBClassifier(
+                n_estimators=600,
+                max_depth=32,
+                learning_rate=0.1,
+                objective='multi:softprob',
+                random_state=317
+            )
+            # print("running gbt on sample:", samples)
+            # lct = 0
+            # print(type(fsdk18_test_images))
+            # for img in fsdk18_test_images:
+            #     image = img.reshape(32, 32)
+            #     plt.imshow(image)
+            #     label = index_to_labels.get(fsdk18_test_labels[lct])
+            #     plt.title("{} | {}".format(fsdk18_test_labels[lct], label))
+            #     lct += 1
+            #     plt.show()
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_gbt_image_set(
+                gbt_model,
+                fsdk18_train_images,
+                fsdk18_train_labels,
+                fsdk18_test_images,
+                fsdk18_test_labels,
+                samples,
+                classes,
+            )
+            gbt_kappa.append(cohen_kappa)
+            gbt_ece.append(ece)
+            gbt_train_time.append(train_time)
+            gbt_test_time.append(test_time)
+            classes = sorted(classes)
+            gbt_probs_labels.append("Classes:" + str(classes))
+            gbt_probs_labels.append("Sample size:" + str(samples))
+            for i in range(len(test_probs)):
+                gbt_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]))
+            gbt_probs_labels.append(" \n")
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), test_labels[i]])
+            d1[samples] = l3
+        storage_dict[tuple(sorted(classes))] = d1
+    # print(gbt_probs_labels)
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
+    with open(prefix +'gbt_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+    # save the model
+    with open(prefix + 'gbt_org.pkl', 'wb') as f:
+        pickle.dump(gbt_model, f)
+    print("gbt finished")
+    write_result(prefix + "gbt_kappa_best.txt", gbt_kappa)
+    write_result(prefix + "gbt_ece.txt", gbt_ece)
+    write_result(prefix + "gbt_train_time.txt", gbt_train_time)
+    write_result(prefix + "gbt_test_time.txt", gbt_test_time)
+    write_result(prefix + "gbt_probs&labels.txt", gbt_probs_labels)
+    write_json(prefix + "gbt_kappa_best.json", gbt_kappa)
+    write_json(prefix + "gbt_ece.json", gbt_ece)
+    write_json(prefix + "gbt_train_time.json", gbt_train_time)
+    write_json(prefix + "gbt_test_time.json", gbt_test_time)
 
 def run_naive_rf():
     naive_rf_kappa = []
@@ -1430,6 +1513,10 @@ if __name__ == "__main__":
     fsdk18_valid_images = valx.reshape(-1, 32 * 32)
     fsdk18_valid_labels = valy.copy()
 
+
+    print("Running GBT tuning \n")
+    run_GBT()
+
     # print("Running RF tuning \n")
     # run_naive_rf()
 
@@ -1442,7 +1529,7 @@ if __name__ == "__main__":
     # print("Running CNN32_5l tuning \n")
     # run_cnn32_5l()
 
-    print("Running Resnet tuning \n")
-    run_resnet18()
+    # print("Running Resnet tuning \n")
+    # run_resnet18()
     
 

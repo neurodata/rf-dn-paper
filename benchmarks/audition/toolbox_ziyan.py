@@ -301,6 +301,95 @@ def get_ece(predicted_posterior, predicted_label, true_label, num_bins=40):
     score /= total_sample
     return score
 
+def remap_labels(labels):
+    unique_labels = np.unique(labels)
+    label_mapping = {original_label: new_label for new_label, original_label in enumerate(unique_labels)}
+    vectorized_map = np.vectorize(label_mapping.get)
+    remapped_labels = vectorized_map(labels)
+    return remapped_labels, label_mapping
+
+
+def run_gbt_image_set(
+    model,
+    train_images,
+    train_labels,
+    test_images,
+    test_labels,
+    samples,
+    classes,
+):
+    """
+    Peforms multiclass predictions for a gradient boosted trees classifier
+    with fixed total samples
+    """
+    # print("inside gbt")
+    # print(type(model))
+    num_classes = len(classes)
+    partitions = np.array_split(np.array(range(samples)), num_classes)
+    # Obtain only train images and labels for selected classes
+    image_ls = []
+    label_ls = []
+    i = 0
+    # print(classes)
+    for cls in classes:
+        class_idx = np.argwhere(train_labels == cls).flatten()
+        np.random.shuffle(class_idx)
+        class_img = train_images[class_idx[: len(partitions[i])]]
+        image_ls.append(class_img)
+        label_ls.append(np.repeat(cls, len(partitions[i])))
+        i += 1
+    min_samples = min([len(class_idx) for class_idx in image_ls])
+    even_image_ls = []
+    even_label_ls = []
+    for cls_images, cls_labels in zip(image_ls, label_ls):
+        idx = np.random.choice(len(cls_images), min_samples, replace=False)
+        even_image_ls.append(cls_images[idx])
+        even_label_ls.append(cls_labels[idx])
+    train_images = np.concatenate(even_image_ls)
+    train_labels = np.concatenate(even_label_ls)
+    # train_labels = train_labels[:len(train_images)] # Sometimes the shape of the train_labels would be differ from the train_images, so I just changed the shape of train_labels Ziyan
+    # print("train shapes:", train_images.shape, train_labels.shape)
+    # Obtain only test images and labels for selected classes
+    image_ls = []
+    label_ls = []
+    for cls in classes:
+        image_ls.append(test_images[test_labels == cls])
+        label_ls.append(np.repeat(cls, np.sum(test_labels == cls)))
+    test_images = np.concatenate(image_ls)
+    test_labels = np.concatenate(label_ls)
+    # Train the model
+    # print("orig labels:", train_labels)
+    #label mapping code
+    # unique_labels = np.unique(sorted(train_labels))
+    # # print(unique_labels)
+    # label_mapping = {train_labels: new_label for new_label, train_labels in enumerate(unique_labels)}
+    # print("label mapping:", label_mapping)
+    # vectorized_map = np.vectorize(label_mapping.get)
+    # train_labels = vectorized_map(train_labels)
+    train_labels_remapped, label_mapping = remap_labels(train_labels)
+    # print("remapped labels:", train_labels_remapped)
+    test_labels_remapped = np.vectorize(label_mapping.get)(test_labels)
+    start_time = time.perf_counter()
+    model.fit(train_images, train_labels_remapped)
+    end_time = time.perf_counter()
+    train_time = end_time - start_time
+    # Test the model
+    start_time = time.perf_counter()
+    test_preds = model.predict(test_images)
+    # print(test_preds, "|", test_labels, "\n")
+    end_time = time.perf_counter()
+    test_time = end_time - start_time
+    test_probs = model.predict_proba(test_images)
+    # print(get_ece(test_probs, test_preds, test_labels_remapped))
+    return (
+        accuracy_score(test_labels_remapped, test_preds),
+        get_ece(test_probs, test_preds, test_labels_remapped),
+        train_time,
+        test_time,
+        test_probs,
+        test_labels_remapped,
+        test_preds
+    )
 
 def run_rf_image_set(
     model,
