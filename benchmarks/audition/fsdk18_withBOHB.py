@@ -15,26 +15,17 @@ from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
 from skopt import BayesSearchCV
 from skopt.callbacks import DeadlineStopper
-from FMin import fmin
+from scipy.optimize import fmin
 import xgboost as xgb
-from hpbandster.optimizers import BOHB
-import hpbandster.core.nameserver as hpns
-from hpbandster.core.worker import Worker
-import ConfigSpace as CS
-import ConfigSpace.hyperparameters as CSH
-from ConfigSpace.hyperparameters import UniformIntegerHyperparameter, UniformFloatHyperparameter, CategoricalHyperparameter
-import re
 
 import pandas as pd
 import torchvision.models as models
+import warnings
 import random
 import pickle
-import warnings
 
-warnings.filterwarnings("ignore")
-
-np.random.seed(317)
-
+import ConfigSpace as CS
+import ConfigSpace.hyperparameters as CSH
 from smac import Scenario
 from pathlib import Path
 from smac.facade import AbstractFacade
@@ -42,19 +33,12 @@ import matplotlib.pyplot as plt
 from smac import MultiFidelityFacade as MFFacade
 from smac.intensifier.hyperband import Hyperband
 from smac.intensifier.successive_halving import SuccessiveHalving
-
-def run_bohb():
-    config_space = CS.ConfigurationSpace()
-    config_space.add_hyperparameters(CSH.CategoricalHyperparameter('activation', ['tanh', 'relu']))
-    config_space.add_hyperparameter(CS.UniformFloatHyperparameter('learning_rate_init', lower=0.001, upper=0.1))
-    solver = CSH.CategoricalHyperparameter('solver', ['sgd', 'adam'])
-    config_space.add_hyperparameter(solver)
-    batch_size = CSH.UniformFloatHyperparameter('batch_size', lower = 32, upper = 1024)
-    config_space.add_hyperparameter(batch_size)
-    epochs = CSH.UniformFloatHyperparameter('epochs', lower = 30, upper = 120)
-    config_space.add_hyperparameter(epochs)
+import re
 
 
+warnings.filterwarnings("ignore")
+
+np.random.seed(317)
 
 def run_GBT():
     gbt_kappa = []
@@ -138,6 +122,112 @@ def run_GBT():
     write_json(prefix + "gbt_train_time.json", gbt_train_time)
     write_json(prefix + "gbt_test_time.json", gbt_test_time)
 
+def run_BOHB():
+    config_space = CS.ConfigurationSpace()
+    config_space.add_hyperparameter(CS.UniformFloatHyperparameter('lr', lower=0.001, upper=0.1))
+    solver = CSH.CategoricalHyperparameter('optimizer_name', ['sgd', 'adam'])
+    config_space.add_hyperparameter(solver)
+    batch_size = CSH.UniformFloatHyperparameter('batch_size', lower = 32, upper = 1024)
+    config_space.add_hyperparameter(batch_size)
+    epochs = CSH.UniformFloatHyperparameter('epochs', lower = 30, upper = 120)
+    config_space.add_hyperparameter(epochs)
+
+    trial_metrics = []
+        
+    for intensifier_object in [SuccessiveHalving, Hyperband]:
+        # Define our environment variables
+        scenario = Scenario(
+            configspace=config_space,
+            output_directory=Path("TEST_SMAC"),
+            walltime_limit=30,  # Limit to two minutes
+            n_trials=15000,  # Evaluated max 500 trials
+            n_workers=8,  # Use one worker
+            min_budget = 5,
+            max_budget = 50,
+        )
+
+        # We want to run five random configurations before starting the optimization.
+        initial_design = MFFacade.get_initial_design(scenario, n_configs=5)
+
+        # Create our intensifier
+        intensifier = intensifier_object(scenario, incumbent_selection="highest_budget")
+
+        #seconds elapsed during training
+
+
+        # The multi-fidelity facade is the closest implementation to BOHB. | https://automl.github.io/SMAC3/main/3_getting_started.html
+        facades: list[AbstractFacade] = []
+        smac = MFFacade(scenario=scenario, target_function=target_function_network)
+        # smac = MFFacade(scenario=scenario, target_function=target_function(config, seed=317, budget=20))
+        incumbent = smac.optimize()
+        best_config = incumbent
+        print(best_config)
+        facades.append(smac)
+
+
+def target_function_network(target_wrapper, config, seed, budget, train_data, train_labels, valid_data, valid_labels):
+    print("INSIDE TARGET FUNC")
+    start_time = time.time()
+    """
+    Trains the MLP with the given configuration and evaluates on the validation set.
+    :param config: A Configuration (dictionary) of hyperparameters.
+    :return: The validation error to be minimized.
+    """
+    # print(config)
+    # Instantiate the MLPWrapper_forBOHB with the current configuration
+    wrapper = target_wrapper(lr=config['lr'], 
+                            optimizer_name=config['optimizer_name'], 
+                            batch_size=config['batch_size'],
+                            epochs=config['epochs'],
+                            Valid_X = valid_data,
+                            Valid_y = valid_labels,)
+
+    # Fit the model on training data
+    # time.sleep(1000)
+    wrapper.fit(train_data, train_labels)
+
+    predictions = wrapper.predict(valid_data)
+    # quit(0)
+    # print('OUTSIDE PRED')
+    accuracy = accuracy_score(valid_labels, predictions)
+    cohens_kappa = cohen_kappa_score(valid_labels, predictions)
+
+    predicted_posterior = wrapper.predict_proba(valid_data)
+    num_bins = np.unique(np.concatenate((train_labels, valid_labels))).size
+    # print("HERE, HERE, HERE")
+    
+    # print(predicted_posterior)
+
+    ece = get_ece(predicted_posterior, predictions, valid_labels, num_bins)
+
+    # print('VALS CALCULATED')
+    # Evaluate the model on validation data
+    # The target function returns 1 - accuracy, so we directly return this value
+    validation_error = wrapper.score(valid_data, valid_labels)
+    
+    end_time = time.time()  # End time for the trial
+    trial_duration = end_time - start_time
+    print('APPENDING')
+    trial_data = {
+        'config': str(config),
+        'seed': seed,
+        'budget': budget,
+        'accuracy': accuracy,
+        'cohens_kappa': cohens_kappa,
+        'ece': ece,
+        'trial_duration': trial_duration,
+        'validation_error': validation_error
+    }
+    # print(trial_metrics)
+    formatted_data = f"Trial Data:\n{json.dumps(trial_data, indent=4)}\n"
+    with open('TEST_BOHB_FSDK18_cnn32.txt', 'a+') as f:
+        f.write(formatted_data)
+        f.write("\n" * 2)  # Add extra newlines for separation between entries
+
+    print('APPENDED')
+
+    return validation_error
+
 
 def run_naive_rf():
     naive_rf_kappa = []
@@ -147,122 +237,121 @@ def run_naive_rf():
     navie_rf_probs_labels = []
     storage_dict = {}
 
-    # Bayesian search for best parameters
-    # RF = RandomForestClassifier(max_features=None ,n_jobs=-1, random_state=317)
-    # fit_model = run_BOAH(RF,
-    #     fsdk18_train_images,
-    #     fsdk18_train_labels)
-    # print(fit_model)
-    # quit(0)
-
-    time_limit = 7200 # 2 hours  
-    deadline_stopper = DeadlineStopper(time_limit)
-    start_time = time.perf_counter()
     RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    fit_model = run_BOAH(RF,
+        fsdk18_train_images,
+        fsdk18_train_labels)
+    print(fit_model)
+    quit(0)
+    # # Bayesian search for best parameters
+    # time_limit = 7200 # 2 hours  
+    # deadline_stopper = DeadlineStopper(time_limit)
+    # start_time = time.perf_counter()
+    # RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-    param_space = {
-        'n_estimators': list(range(400, 501, 100)), 
-        'max_depth': list(range(2, 21, 2)), 
-    }
+    # param_space = {
+    #     'n_estimators': list(range(400, 501, 100)), 
+    #     'max_depth': list(range(2, 21, 2)), 
+    # }
 
-    Bayes = BayesSearchCV(
-        estimator=RF, 
-        search_spaces=param_space,
-        n_iter=50,  
-        cv=3,  
-        n_jobs=-1, 
-        verbose=1, 
-    )
+    # Bayes = BayesSearchCV(
+    #     estimator=RF, 
+    #     search_spaces=param_space,
+    #     n_iter=50,  
+    #     cv=3,  
+    #     n_jobs=-1, 
+    #     verbose=1, 
+    # )
 
-    Bayes.fit(fsdk18_train_images, fsdk18_train_labels, callback=deadline_stopper)
+    # Bayes.fit(fsdk18_train_images, fsdk18_train_labels, callback=deadline_stopper)
 
-    best_params = Bayes.best_params_
-    end_time = time.perf_counter()
-    search_time = end_time - start_time
-    print("Best Accuracy:", Bayes.best_score_)
-    print("Best Hyperparameters:", best_params)
-    print("Bayesian Search time:", search_time)
+    # best_params = Bayes.best_params_
+    # end_time = time.perf_counter()
+    # search_time = end_time - start_time
+    # print("Best Accuracy:", Bayes.best_score_)
+    # print("Best Hyperparameters:", best_params)
+    # print("Bayesian Search time:", search_time)
 
 
 
-    # for classes in classes_space:
-    #     d1 = {}
-    #     # cohen_kappa vs num training samples (naive_rf)
-    #     for samples in samples_space:
-    #         l3 = []            
-    #         # train data
+    for classes in classes_space:
+        d1 = {}
+        # cohen_kappa vs num training samples (naive_rf)
+        for samples in samples_space:
+            l3 = []            
+            # train data
 
-    #         # RF_best = RandomForestClassifier(n_jobs=-1, random_state=317)
+            # RF_best = RandomForestClassifier(n_jobs=-1, random_state=317)
 
-    #         # Best set of hyperparameters of 3 classes: 
-    #         # RF_best = RandomForestClassifier(n_estimators=600, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+            # Best set of hyperparameters of 3 classes: 
+            # RF_best = RandomForestClassifier(n_estimators=600, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-    #         # Best set of hyperparameters of 8 classes: 
-    #         # RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+            # Best set of hyperparameters of 8 classes: 
+            # RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-    #         # Best set of hyperparameters of 15 classes:
-    #         RF_best = RandomForestClassifier(n_estimators=400, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+            # Best set of hyperparameters of 15 classes:
+            RF_best = RandomForestClassifier(n_estimators=400, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
-    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
-    #             RF_best,
-    #             fsdk18_train_images,
-    #             fsdk18_train_labels,
-    #             fsdk18_test_images,
-    #             fsdk18_test_labels,
-    #             samples,
-    #             classes,
-    #         )
-    #         naive_rf_kappa.append(cohen_kappa)
-    #         naive_rf_ece.append(ece)
-    #         naive_rf_train_time.append(train_time)
-    #         naive_rf_test_time.append(test_time)
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
+                RF_best,
+                fsdk18_train_images,
+                fsdk18_train_labels,
+                fsdk18_test_images,
+                fsdk18_test_labels,
+                samples,
+                classes,
+            )
+            naive_rf_kappa.append(cohen_kappa)
+            naive_rf_ece.append(ece)
+            naive_rf_train_time.append(train_time)
+            naive_rf_test_time.append(test_time)
 
-    #         classes = sorted(classes)
-    #         navie_rf_probs_labels.append("Classes:" + str(classes))
+            classes = sorted(classes)
+            navie_rf_probs_labels.append("Classes:" + str(classes))
 
-    #         navie_rf_probs_labels.append("Sample size:" + str(samples))
+            navie_rf_probs_labels.append("Sample size:" + str(samples))
 
-    #         for i in range(len(test_probs)):
-    #             navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]))
-    #         navie_rf_probs_labels.append(" \n")
+            for i in range(len(test_probs)):
+                navie_rf_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(test_labels[i]))
+            navie_rf_probs_labels.append(" \n")
 
-    #         for i in range(len(test_probs)):
-    #             l3.append([test_probs[i].tolist(), test_labels[i]])
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), test_labels[i]])
 
-    #         d1[samples] = l3
+            d1[samples] = l3
 
-    #     storage_dict[tuple(sorted(classes))] = d1
+        storage_dict[tuple(sorted(classes))] = d1
 
-    # # switch the classes and sample sizes
-    # switched_storage_dict = {}
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
 
-    # for classes, class_data in storage_dict.items():
+    for classes, class_data in storage_dict.items():
 
-    #     for samples, data in class_data.items():
+        for samples, data in class_data.items():
 
-    #         if samples not in switched_storage_dict:
-    #             switched_storage_dict[samples] = {}
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
 
-    #         if classes not in switched_storage_dict[samples]:
-    #             switched_storage_dict[samples][classes] = data
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
 
-    # with open(prefix +'rf_switched_storage_dict.pkl', 'wb') as f:
-    #     pickle.dump(switched_storage_dict, f)
+    with open(prefix +'rf_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
 
-    # # save the model
-    # with open(prefix + 'naive_rf_org.pkl', 'wb') as f:
-    #     pickle.dump(RF_best, f)
+    # save the model
+    with open(prefix + 'naive_rf_org.pkl', 'wb') as f:
+        pickle.dump(RF_best, f)
 
-    # print("naive_rf finished")
-    # write_result(prefix + "naive_rf_kappa_best.txt", naive_rf_kappa)
-    # write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
-    # write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
-    # write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
-    # write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
-    # write_json(prefix + "naive_rf_kappa_best.json", naive_rf_kappa)
-    # write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
-    # write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
-    # write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
+    print("naive_rf finished")
+    write_result(prefix + "naive_rf_kappa_best.txt", naive_rf_kappa)
+    write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
+    write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
+    write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
+    write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
+    write_json(prefix + "naive_rf_kappa_best.json", naive_rf_kappa)
+    write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
+    write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
+    write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
 
 
 def run_cnn32():
@@ -286,6 +375,8 @@ def run_cnn32():
             self.optimizer_name = optimizer_name
             self.Valid_X = Valid_X
             self.Valid_y = Valid_y
+            self.trial_start_time = time.perf_counter()
+            self.trial_end_time = None
 
             if optimizer_name == 'sgd':
                 self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
@@ -340,17 +431,31 @@ def run_cnn32():
                     if flag >= 3:
                         max_epochs.append(epoch)
                         break
-            # print(np.max(max_epochs))
             return self
         
         def predict(self, X):
             X = X.reshape(-1, 1, 32, 32)
             model = self.model
             model.eval()
+            test_preds = []
+            with torch.no_grad():
+                inputs = X.to(self.device)
+                outputs = model(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+                # predicted = predicted.unsqueeze(0)
+                # test_preds = np.concatenate((test_preds, predicted.tolist()))
+                return predicted.cpu().numpy()
+            
+        def predict_proba(self, X):
+            X = X.reshape(-1, 1, 32, 32)
+            model = self.model
+            model.eval()
+            test_probs = []
             with torch.no_grad():
                 outputs = model(X.to(self.device))
-                _, predicted = torch.max(outputs.data, 1)
-                return predicted.cpu()
+                test_prob = nn.Softmax(dim=1)(outputs)
+                test_probs = test_prob.cpu().numpy()
+                return test_probs
 
         def score(self, X, y):
             X = X.reshape(-1, 1, 32, 32)
@@ -358,6 +463,15 @@ def run_cnn32():
             model.eval()
             predictions = self.predict(X)
             acc = accuracy_score(y, predictions)
+            self.trial_end_time = time.perf_counter()
+            valid_pred = self.predict(self.Valid_X)
+            valid_acc = accuracy_score(self.Valid_y, valid_pred)
+            valid_probs = self.predict_proba(self.Valid_X)
+            valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
+            valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
+            with open('CNN32_BO_results_2h.txt', 'a') as f:
+                f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
+
             return acc
 
     # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
@@ -370,44 +484,90 @@ def run_cnn32():
     valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
     valid_labels = torch.LongTensor(fsdk18_valid_labels)
 
+    # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
 
-    # Best set of hyperparameters for 3 classes: 
-    #             optimizer_name="adam",
-    #             epochs=100,
-    #             batch=1024,
-    #             lr=0.001,
+    # Bayesian optimization for best hyperparameters
+    time_limit = 240 # 2 hours  
+    deadline_stopper = DeadlineStopper(time_limit)
+    param_space={
+        "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
+        "lr": (0.001, 0.1),
+        "epochs": (40, 120),
+        "optimizer_name": ["adam", "sgd"],
+        }
 
-    # # Bayesian optimization for best hyperparameters
-    # time_limit = 7200 # 2 hours  
-    # deadline_stopper = DeadlineStopper(time_limit)
-    # start_time = time.perf_counter()
-    # param_space={
-    #     "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-    #     "lr": [0.001, 0.01, 0.1],
-    #     "epochs": list(range(40, 181, 10)),
-    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-    #     "optimizer_name": ["adam", "sgd"],
-    #     }
+    Bayes = BayesSearchCV(
+        estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
+        search_spaces=param_space,
+        n_iter=50,
+        cv=3,
+        verbose=1,
+        n_jobs=-1,
+    )
 
-    # Bayes = BayesSearchCV(
-    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-    #     search_spaces=param_space,
-    #     n_iter=50,
-    #     cv=3,
-    #     verbose=1,
-    #     n_jobs=-1,
-    # )
+    with open('CNN32_BO_results_2h.txt', 'w') as f:
+        f.write("CNN32_BO_2h Results each epochs: \n")
 
-    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
+    start_time = time.perf_counter()
+    Bayes.fit(train_images, train_labels, callback=deadline_stopper)
+    end_time = time.perf_counter()
 
-    # best_params = Bayes.best_params_
-    # end_time = time.perf_counter()
-    # search_time = end_time - start_time
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Parameters:", best_params)
-    # print("Bayesian Search Time:", search_time)
-    # with open(prefix + "Bayesian Search time CNN.txt", "w") as f:
-    #     f.write(str(search_time)) 
+    iteration_times = deadline_stopper.iter_time
+    search_time = end_time - start_time
+    results = Bayes.cv_results_
+    results_df = pd.DataFrame(results)
+
+    best_params = Bayes.best_params_
+    print("Best Accuracy:", Bayes.best_score_)
+    print("Best Parameters:", best_params)
+    print("Bayesian Search Time:", search_time)
+
+    accuracy, kappa, ece, Time = [], [], [], []
+
+    newresults = []
+    with open('CNN32_BO_results_2h.txt', 'r') as f:
+        data = f.readlines()
+        linect = 0
+        for line in data:
+            if "Time:" in line:
+                index = line.find("Time:")
+
+                i = linect // 3 #+ linect % 3
+
+                newtime = iteration_times[i]/3
+                linect += 1
+                
+                newline = line[:index + len("Time: ")] + str(newtime) + "\n"
+                newresults.append(newline)
+            else:
+                newresults.append(line)
+
+    with open('CNN32_BO_results_2h.txt', 'w') as f:
+        f.writelines(newresults)
+
+    with open('CNN32_BO_results_2h.txt', 'r') as f:
+        data = f.readlines()
+
+    for line in data:
+        if "Time: " in line:
+            numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
+            if numbers:
+                accuracy.append(float(numbers[0]))
+                kappa.append(float(numbers[1]))
+                ece.append(float(numbers[2]))
+                Time.append(float(numbers[3]))
+
+    print("sum time:", np.sum(Time)) 
+
+
+
+
+    ### Testing BOHB on CNN32
+    # run_BOHB()
+
+
+    
+
 
     ### Best set of hyperparameters for 8 classes:
         # optimizer_name="adam",
@@ -418,103 +578,103 @@ def run_cnn32():
 
 
     
-    for classes in classes_space:
-        d1 = {}
+    # for classes in classes_space:
+    #     d1 = {}
 
-        # cohen_kappa vs num training samples (cnn32)
-        for samples in samples_space:
-            l3 = []
-            # train data
-            cnn32 = SimpleCNN32Filter(len(classes))
-            # 3000 samples, 80% train is 2400 samples, 20% test
-            train_images = trainx.copy()
-            train_labels = trainy.copy()
-            # reshape in 4d array
-            test_images = testx.copy()
-            test_labels = testy.copy()
+    #     # cohen_kappa vs num training samples (cnn32)
+    #     for samples in samples_space:
+    #         l3 = []
+    #         # train data
+    #         cnn32 = SimpleCNN32Filter(len(classes))
+    #         # 3000 samples, 80% train is 2400 samples, 20% test
+    #         train_images = trainx.copy()
+    #         train_labels = trainy.copy()
+    #         # reshape in 4d array
+    #         test_images = testx.copy()
+    #         test_labels = testy.copy()
 
-            (
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-            ) = prepare_data(
-                train_images, train_labels, test_images, test_labels, samples, classes
-            )
+    #         (
+    #             train_images,
+    #             train_labels,
+    #             valid_images,
+    #             valid_labels,
+    #             test_images,
+    #             test_labels,
+    #         ) = prepare_data(
+    #             train_images, train_labels, test_images, test_labels, samples, classes
+    #         )
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-                cnn32,
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-                optimizer_name="adam",
-                epochs=100,
-                batch=1024,
-                lr=0.001,
-            )
-            cnn32_kappa.append(cohen_kappa)
-            cnn32_ece.append(ece)
-            cnn32_train_time.append(train_time)
-            cnn32_test_time.append(test_time)
+    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+    #             cnn32,
+    #             train_images,
+    #             train_labels,
+    #             valid_images,
+    #             valid_labels,
+    #             test_images,
+    #             test_labels,
+    #             optimizer_name="adam",
+    #             epochs=100,
+    #             batch=1024,
+    #             lr=0.001,
+    #         )
+    #         cnn32_kappa.append(cohen_kappa)
+    #         cnn32_ece.append(ece)
+    #         cnn32_train_time.append(train_time)
+    #         cnn32_test_time.append(test_time)
 
-            actual_test_labels = []
-            for i in range(len(test_labels)):
-                actual_test_labels.append(int(classes[test_labels[i]]))
+    #         actual_test_labels = []
+    #         for i in range(len(test_labels)):
+    #             actual_test_labels.append(int(classes[test_labels[i]]))
 
-            sorted_classes = sorted(classes)
-            cnn32_probs_labels.append("Classes:" + str(sorted_classes))
+    #         sorted_classes = sorted(classes)
+    #         cnn32_probs_labels.append("Classes:" + str(sorted_classes))
 
-            cnn32_probs_labels.append("Sample size:" + str(samples))
+    #         cnn32_probs_labels.append("Sample size:" + str(samples))
             
-            actual_preds = []
-            for i in range(len(test_preds)):
-                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+    #         actual_preds = []
+    #         for i in range(len(test_preds)):
+    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
-            for i in range(len(test_probs)):
-                cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-            cnn32_probs_labels.append(" \n")
+    #         for i in range(len(test_probs)):
+    #             cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+    #         cnn32_probs_labels.append(" \n")
 
-            for i in range(len(test_probs)):
-                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+    #         for i in range(len(test_probs)):
+    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
 
-            d1[samples] = l3
+    #         d1[samples] = l3
 
-        storage_dict[tuple(sorted(classes))] = d1
+    #     storage_dict[tuple(sorted(classes))] = d1
 
-    # switch the classes and sample sizes
-    switched_storage_dict = {}
+    # # switch the classes and sample sizes
+    # switched_storage_dict = {}
     
-    for classes, class_data in storage_dict.items():
-        for samples, data in class_data.items():
+    # for classes, class_data in storage_dict.items():
+    #     for samples, data in class_data.items():
 
-            if samples not in switched_storage_dict:
-                switched_storage_dict[samples] = {}
+    #         if samples not in switched_storage_dict:
+    #             switched_storage_dict[samples] = {}
 
-            if classes not in switched_storage_dict[samples]:
-                switched_storage_dict[samples][classes] = data
+    #         if classes not in switched_storage_dict[samples]:
+    #             switched_storage_dict[samples][classes] = data
 
-    with open(prefix +'cnn32_switched_storage_dict.pkl', 'wb') as f:
-        pickle.dump(switched_storage_dict, f)
+    # with open(prefix +'cnn32_switched_storage_dict.pkl', 'wb') as f:
+    #     pickle.dump(switched_storage_dict, f)
 
-    # save the model
-    with open(prefix + 'cnn32.pkl', 'wb') as f:
-        pickle.dump(cnn32, f)
+    # # save the model
+    # with open(prefix + 'cnn32.pkl', 'wb') as f:
+    #     pickle.dump(cnn32, f)
 
-    print("cnn32 finished")
-    write_result(prefix + "cnn32_kappa_best.txt", cnn32_kappa)
-    write_result(prefix + "cnn32_ece.txt", cnn32_ece)
-    write_result(prefix + "cnn32_train_time.txt", cnn32_train_time)
-    write_result(prefix + "cnn32_test_time.txt", cnn32_test_time)
-    write_result(prefix + "cnn32_probs&labels.txt", cnn32_probs_labels)
-    write_json(prefix + "cnn32_kappa_best.json", cnn32_kappa)
-    write_json(prefix + "cnn32_ece.json", cnn32_ece)
-    write_json(prefix + "cnn32_train_time.json", cnn32_train_time)
-    write_json(prefix + "cnn32_test_time.json", cnn32_test_time)
+    # print("cnn32 finished")
+    # write_result(prefix + "cnn32_kappa_best.txt", cnn32_kappa)
+    # write_result(prefix + "cnn32_ece.txt", cnn32_ece)
+    # write_result(prefix + "cnn32_train_time.txt", cnn32_train_time)
+    # write_result(prefix + "cnn32_test_time.txt", cnn32_test_time)
+    # write_result(prefix + "cnn32_probs&labels.txt", cnn32_probs_labels)
+    # write_json(prefix + "cnn32_kappa_best.json", cnn32_kappa)
+    # write_json(prefix + "cnn32_ece.json", cnn32_ece)
+    # write_json(prefix + "cnn32_train_time.json", cnn32_train_time)
+    # write_json(prefix + "cnn32_test_time.json", cnn32_test_time)
 
 
 def run_cnn32_2l():
@@ -538,6 +698,8 @@ def run_cnn32_2l():
             self.optimizer_name = optimizer_name
             self.Valid_X = Valid_X
             self.Valid_y = Valid_y
+            self.trial_start_time = time.perf_counter()
+            self.trial_end_time = None
 
             if optimizer_name == 'sgd':
                 self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
@@ -592,7 +754,6 @@ def run_cnn32_2l():
                     if flag >= 3:
                         max_epochs.append(epoch)
                         break
-            # print(np.max(max_epochs))
             return self
         
         def predict(self, X):
@@ -600,9 +761,21 @@ def run_cnn32_2l():
             model = self.model
             model.eval()
             with torch.no_grad():
-                outputs = model(X.to(self.device))
+                inputs = X.to(self.device)
+                outputs = model(inputs)
                 _, predicted = torch.max(outputs.data, 1)
-                return predicted.cpu()
+                return predicted.cpu().numpy()
+            
+        def predict_proba(self, X):
+            X = X.reshape(-1, 1, 32, 32)
+            model = self.model
+            model.eval()
+            test_probs = []
+            with torch.no_grad():
+                outputs = model(X.to(self.device))
+                test_prob = nn.Softmax(dim=1)(outputs)
+                test_probs = test_prob.cpu().numpy()
+                return test_probs
 
         def score(self, X, y):
             X = X.reshape(-1, 1, 32, 32)
@@ -610,9 +783,17 @@ def run_cnn32_2l():
             model.eval()
             predictions = self.predict(X)
             acc = accuracy_score(y, predictions)
+            self.trial_end_time = time.perf_counter()
+            valid_pred = self.predict(self.Valid_X)
+            valid_acc = accuracy_score(self.Valid_y, valid_pred)
+            valid_probs = self.predict_proba(self.Valid_X)
+            valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
+            valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
+            with open('CNN32_2l_BO_results_2h.txt', 'a') as f:
+                f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
+
             return acc
 
-    start_time = time.perf_counter()
     # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
     scaler = StandardScaler()
     train_images = scaler.fit_transform(fsdk18_train_images)
@@ -623,52 +804,80 @@ def run_cnn32_2l():
     valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
     valid_labels = torch.LongTensor(fsdk18_valid_labels)
 
-  
-    # Best set of hyperparameters for 3classes:
-                # optimizer_name="adam",
-                # batch=1024,
-                # epochs=60,
-                # lr=0.001,
+    # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
 
+    # Bayesian optimization for best hyperparameters
+    time_limit = 7200 # 2 hours  
+    deadline_stopper = DeadlineStopper(time_limit)
+    param_space={
+        "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
+        "lr": (0.001, 0.1),
+        "epochs": (40, 120),
+        "optimizer_name": ["adam", "sgd"],
+        }
 
-    # # Bayesian optimization for best hyperparameters
-    # time_limit = 7200 # 2 hours  
-    # deadline_stopper = DeadlineStopper(time_limit)
-    # start_time = time.perf_counter()
-    # param_space={
-    #     "batch_size": [32, 64, 128 ,256, 512, 1024, 2048, 4096],
-    #     "lr": [0.001, 0.01, 0.1],
-    #     "epochs": list(range(60, 121, 10)),
-    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-    #     "optimizer_name": ["adam", "sgd"],
-    #     }
+    Bayes = BayesSearchCV(
+        estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
+        search_spaces=param_space,
+        n_iter=50,
+        cv=3,
+        verbose=1,
+        n_jobs=-1,
+    )
 
-    # Bayes = BayesSearchCV(
-    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-    #     search_spaces=param_space,
-    #     n_iter=50,
-    #     cv=3,
-    #     verbose=1,
-    #     n_jobs=-1,
-    # )
+    with open('CNN32_2l_BO_results_2h.txt', 'w') as f:
+        f.write("CNN32_2l_BO_2h Results each epochs: \n")
 
-    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
+    start_time = time.perf_counter()
+    Bayes.fit(train_images, train_labels, callback=deadline_stopper)
+    end_time = time.perf_counter()
 
-    # best_params = Bayes.best_params_
-    # end_time = time.perf_counter()
-    # search_time = end_time - start_time
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Parameters:", best_params)
-    # print("Bayesian Search Time:", search_time)
-    # with open(prefix + "Bayesian Search time 2l.txt", "w") as f:
-    #     f.write(str(search_time)) 
+    iteration_times = deadline_stopper.iter_time
+    search_time = end_time - start_time
+    results = Bayes.cv_results_
+    results_df = pd.DataFrame(results)
 
+    best_params = Bayes.best_params_
+    print("Best Accuracy:", Bayes.best_score_)
+    print("Best Parameters:", best_params)
+    print("Bayesian Search Time:", search_time)
 
-    ### Best set of hyperparameters for 8 classes:
-        # optimizer_name="adam",
-        # batch=1024,
-        # epochs=100,
-        # lr=0.001,
+    accuracy, kappa, ece, Time = [], [], [], []
+
+    newresults = []
+    with open('CNN32_2l_BO_results_2h.txt', 'r') as f:
+        data = f.readlines()
+        linect = 0
+        for line in data:
+            if "Time:" in line:
+                index = line.find("Time:")
+
+                i = linect // 3 #+ linect % 3
+
+                newtime = iteration_times[i]/3
+                linect += 1
+                
+                newline = line[:index + len("Time: ")] + str(newtime) + "\n"
+                newresults.append(newline)
+            else:
+                newresults.append(line)
+
+    with open('CNN32_2l_BO_results_2h.txt', 'w') as f:
+        f.writelines(newresults)
+
+    with open('CNN32_2l_BO_results_2h.txt', 'r') as f:
+        data = f.readlines()
+
+    for line in data:
+        if "Time: " in line:
+            numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
+            if numbers:
+                accuracy.append(float(numbers[0]))
+                kappa.append(float(numbers[1]))
+                ece.append(float(numbers[2]))
+                Time.append(float(numbers[3]))
+
+    print("sum time:", np.sum(iteration_times))
    
 
 
@@ -676,103 +885,103 @@ def run_cnn32_2l():
 
 
 
-    for classes in classes_space:
-        d1 = {}
+    # for classes in classes_space:
+    #     d1 = {}
 
-        # cohen_kappa vs num training samples (cnn32_2l)
-        for samples in samples_space:
-            l3 = []
-            # train data
-            cnn32_2l = SimpleCNN32Filter2Layers(len(classes))
-            # 3000 samples, 80% train is 2400 samples, 20% test
-            train_images = trainx.copy()
-            train_labels = trainy.copy()
-            # reshape in 4d array
-            test_images = testx.copy()
-            test_labels = testy.copy()
+    #     # cohen_kappa vs num training samples (cnn32_2l)
+    #     for samples in samples_space:
+    #         l3 = []
+    #         # train data
+    #         cnn32_2l = SimpleCNN32Filter2Layers(len(classes))
+    #         # 3000 samples, 80% train is 2400 samples, 20% test
+    #         train_images = trainx.copy()
+    #         train_labels = trainy.copy()
+    #         # reshape in 4d array
+    #         test_images = testx.copy()
+    #         test_labels = testy.copy()
 
-            (
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-            ) = prepare_data(
-                train_images, train_labels, test_images, test_labels, samples, classes
-            )
+    #         (
+    #             train_images,
+    #             train_labels,
+    #             valid_images,
+    #             valid_labels,
+    #             test_images,
+    #             test_labels,
+    #         ) = prepare_data(
+    #             train_images, train_labels, test_images, test_labels, samples, classes
+    #         )
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-                cnn32_2l,
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-                optimizer_name="adam",
-                batch=256,
-                epochs=100,
-                lr=0.01,
-            )
-            cnn32_2l_kappa.append(cohen_kappa)
-            cnn32_2l_ece.append(ece)
-            cnn32_2l_train_time.append(train_time)
-            cnn32_2l_test_time.append(test_time)
+    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+    #             cnn32_2l,
+    #             train_images,
+    #             train_labels,
+    #             valid_images,
+    #             valid_labels,
+    #             test_images,
+    #             test_labels,
+    #             optimizer_name="adam",
+    #             batch=256,
+    #             epochs=100,
+    #             lr=0.01,
+    #         )
+    #         cnn32_2l_kappa.append(cohen_kappa)
+    #         cnn32_2l_ece.append(ece)
+    #         cnn32_2l_train_time.append(train_time)
+    #         cnn32_2l_test_time.append(test_time)
 
-            actual_test_labels = []
-            for i in range(len(test_labels)):
-                actual_test_labels.append(int(classes[test_labels[i]]))
+    #         actual_test_labels = []
+    #         for i in range(len(test_labels)):
+    #             actual_test_labels.append(int(classes[test_labels[i]]))
 
-            sorted_classes = sorted(classes)
-            cnn32_2l_probs_labels.append("Classes:" + str(classes))
+    #         sorted_classes = sorted(classes)
+    #         cnn32_2l_probs_labels.append("Classes:" + str(classes))
 
-            cnn32_2l_probs_labels.append("Sample size:" + str(samples))
+    #         cnn32_2l_probs_labels.append("Sample size:" + str(samples))
 
-            actual_preds = []
-            for i in range(len(test_preds)):
-                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+    #         actual_preds = []
+    #         for i in range(len(test_preds)):
+    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
             
-            for i in range(len(test_probs)):
-                cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-            cnn32_2l_probs_labels.append(" \n")
+    #         for i in range(len(test_probs)):
+    #             cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+    #         cnn32_2l_probs_labels.append(" \n")
 
-            for i in range(len(test_probs)):
-                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+    #         for i in range(len(test_probs)):
+    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
 
-            d1[samples] = l3
+    #         d1[samples] = l3
 
-        storage_dict[tuple(sorted(classes))] = d1
+    #     storage_dict[tuple(sorted(classes))] = d1
 
-    # switch the classes and sample sizes
-    switched_storage_dict = {}
+    # # switch the classes and sample sizes
+    # switched_storage_dict = {}
 
-    for classes, class_data in storage_dict.items():
-        for samples, data in class_data.items():
+    # for classes, class_data in storage_dict.items():
+    #     for samples, data in class_data.items():
 
-            if samples not in switched_storage_dict:
-                switched_storage_dict[samples] = {}
+    #         if samples not in switched_storage_dict:
+    #             switched_storage_dict[samples] = {}
 
-            if classes not in switched_storage_dict[samples]:
-                switched_storage_dict[samples][classes] = data
+    #         if classes not in switched_storage_dict[samples]:
+    #             switched_storage_dict[samples][classes] = data
 
-    with open(prefix + 'cnn32_2l_switched_storage_dict.pkl', 'wb') as f:
-        pickle.dump(switched_storage_dict, f)
+    # with open(prefix + 'cnn32_2l_switched_storage_dict.pkl', 'wb') as f:
+    #     pickle.dump(switched_storage_dict, f)
 
-    # save the model
-    with open(prefix + 'cnn32_2l.pkl', 'wb') as f:
-        pickle.dump(cnn32_2l, f)
+    # # save the model
+    # with open(prefix + 'cnn32_2l.pkl', 'wb') as f:
+    #     pickle.dump(cnn32_2l, f)
 
-    print("cnn32_2l finished")
-    write_result(prefix + "cnn32_2l_kappa_best.txt", cnn32_2l_kappa)
-    write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
-    write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
-    write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
-    write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
-    write_json(prefix + "cnn32_2l_kappa_best.json", cnn32_2l_kappa)
-    write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
-    write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
-    write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
+    # print("cnn32_2l finished")
+    # write_result(prefix + "cnn32_2l_kappa_best.txt", cnn32_2l_kappa)
+    # write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
+    # write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
+    # write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
+    # write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
+    # write_json(prefix + "cnn32_2l_kappa_best.json", cnn32_2l_kappa)
+    # write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
+    # write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
+    # write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
 
 
 def run_cnn32_5l():
@@ -799,6 +1008,8 @@ def run_cnn32_5l():
             self.optimizer_name = optimizer_name
             self.Valid_X = Valid_X
             self.Valid_y = Valid_y
+            self.trial_start_time = time.perf_counter()
+            self.trial_end_time = None
 
             if optimizer_name == 'sgd':
                 self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
@@ -853,19 +1064,31 @@ def run_cnn32_5l():
                     if flag >= 3:
                         max_epochs.append(epoch)
                         break
-                    else:
-                        max_epochs.append(self.epochs)
-            # print(np.max(max_epochs))
             return self
         
         def predict(self, X):
             X = X.reshape(-1, 1, 32, 32)
             model = self.model
             model.eval()
+            test_preds = []
+            with torch.no_grad():
+                inputs = X.to(self.device)
+                outputs = model(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+                # predicted = predicted.unsqueeze(0)
+                # test_preds = np.concatenate((test_preds, predicted.tolist()))
+                return predicted.cpu().numpy()
+            
+        def predict_proba(self, X):
+            X = X.reshape(-1, 1, 32, 32)
+            model = self.model
+            model.eval()
+            test_probs = []
             with torch.no_grad():
                 outputs = model(X.to(self.device))
-                _, predicted = torch.max(outputs.data, 1)
-                return predicted.cpu()
+                test_prob = nn.Softmax(dim=1)(outputs)
+                test_probs = test_prob.cpu().numpy()
+                return test_probs
 
         def score(self, X, y):
             X = X.reshape(-1, 1, 32, 32)
@@ -873,6 +1096,15 @@ def run_cnn32_5l():
             model.eval()
             predictions = self.predict(X)
             acc = accuracy_score(y, predictions)
+            self.trial_end_time = time.perf_counter()
+            valid_pred = self.predict(self.Valid_X)
+            valid_acc = accuracy_score(self.Valid_y, valid_pred)
+            valid_probs = self.predict_proba(self.Valid_X)
+            valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
+            valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
+            with open('CNN32_5l_BO_results_2h.txt', 'a') as f:
+                f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
+
             return acc
 
     # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
@@ -885,23 +1117,15 @@ def run_cnn32_5l():
     valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
     valid_labels = torch.LongTensor(fsdk18_valid_labels)
 
-    # Best set of hyperparameters for 3 classes:
-                # lr=0.001,
-                # epochs=100,
-                # batch=32,
-                # optimizer_name="sgd",
-
-
+    # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
 
     # Bayesian optimization for best hyperparameters
     time_limit = 7200 # 2 hours  
     deadline_stopper = DeadlineStopper(time_limit)
-    start_time = time.perf_counter()
     param_space={
         "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-        "lr": [0.001, 0.01, 0.1],
-        "epochs": list(range(60, 121, 10)),
-        # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
+        "lr": (0.001, 0.1),
+        "epochs": (40, 120),
         "optimizer_name": ["adam", "sgd"],
         }
 
@@ -914,24 +1138,59 @@ def run_cnn32_5l():
         n_jobs=-1,
     )
 
+    with open('CNN32_5l_BO_results_2h.txt', 'w') as f:
+        f.write("CNN32_5l_BO_results_2h Results each epochs: \n")
+
+    start_time = time.perf_counter()
     Bayes.fit(train_images, train_labels, callback=deadline_stopper)
+    end_time = time.perf_counter()
+
+    iteration_times = deadline_stopper.iter_time
+    search_time = end_time - start_time
+    results = Bayes.cv_results_
+    results_df = pd.DataFrame(results)
 
     best_params = Bayes.best_params_
-    end_time = time.perf_counter()
-    search_time = end_time - start_time
     print("Best Accuracy:", Bayes.best_score_)
     print("Best Parameters:", best_params)
     print("Bayesian Search Time:", search_time)
-    with open("Bayesian Search time 5l.txt", "w") as f:
-        f.write(str(search_time)) 
 
+    accuracy, kappa, ece, Time = [], [], [], []
 
-    ### Best set of hyperparameters for 8 classes:
-        # optimizer_name="sgd",
-        # lr=0.001,
-        # epochs=100,
-        # batch=128,
+    newresults = []
+    with open('CNN32_5l_BO_results_2h.txt', 'r') as f:
+        data = f.readlines()
+        linect = 0
+        for line in data:
+            if "Time:" in line:
+                index = line.find("Time:")
 
+                i = linect // 3 #+ linect % 3
+
+                newtime = iteration_times[i]/3
+                linect += 1
+                
+                newline = line[:index + len("Time: ")] + str(newtime) + "\n"
+                newresults.append(newline)
+            else:
+                newresults.append(line)
+
+    with open('CNN32_5l_BO_results_2h.txt', 'w') as f:
+        f.writelines(newresults)
+
+    with open('CNN32_5l_BO_results_2h.txt', 'r') as f:
+        data = f.readlines()
+
+    for line in data:
+        if "Time: " in line:
+            numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
+            if numbers:
+                accuracy.append(float(numbers[0]))
+                kappa.append(float(numbers[1]))
+                ece.append(float(numbers[2]))
+                Time.append(float(numbers[3]))
+
+    print("sum time:", np.sum(iteration_times))
 
 
 
@@ -1034,73 +1293,36 @@ def run_cnn32_5l():
     # write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
     # write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
 
+def train_resnet_wrapper(config, budget, X_train, y_train, X_valid, y_valid):
+    """
+    Train the ResnetWrapper model with given configuration and return the loss.
 
-def run_BOAH(base_model, train_data, train_label,num_iterations=1,
-          num_workers=1):
-    CS = ConfigurationSpace()
-    batch_size = UniformIntegerHyperparameter("batch_size", 8, 64)
-    lr = UniformFloatHyperparameter("lr", 0.001, 0.1, log=True)
-    epochs = UniformIntegerHyperparameter("epochs", 60, 121)
-    optimizer_name = CategoricalHyperparameter("optimizer_name", ["adam", "sgd"])
+    Args:
+        config (dict): Configuration dictionary containing hyperparameters.
+        budget (float): Budget parameter from BOAH, not used in this context.
+        X_train (ndarray): Training data.
+        y_train (ndarray): Training labels.
+        X_valid (ndarray): Validation data.
+        y_valid (ndarray): Validation labels.
 
-    CS.add_hyperparameters([batch_size, lr, epochs, optimizer_name])
-
-
-    class ResnetWorker(Worker):
-        def __init__(self, train_data, train_label, **kwargs):
-            super().__init__(**kwargs)
-            self.train_data = train_data
-            self.train_label = train_label
-
-        def compute(self, config, budget, **kwargs):
-            batch_size = config["batch_size"]
-            lr = config["lr"]
-            epochs = int(budget)
-            if config["optimizer_name"] == "adam":
-                optimizer = optim.Adam(base_model.parameters(), lr=lr)
-            else:
-                optimizer = optim.SGD(base_model.parameters(), lr=lr)
-            criterion = nn.CrossEntropyLoss()
-            model = base_model
-            for epoch in range(epochs):
-                model.train()
-                for i in range(0, len(self.train_data), batch_size):
-                    batch_data = self.train_data[i:i + batch_size]
-                    batch_label = self.train_label[i:i + batch_size]
-                    optimizer.zero_grad()
-                    output = model(batch_data)
-                    loss = criterion(output, batch_label)
-                    loss.backward()
-                    optimizer.step()
-
-                model.eval()
-                cur_loss = 0
-                with torch.no_grad():
-                    for i in range(0, len(self.train_data), batch_size):
-                        batch_data = self.train_data[i:i + batch_size]
-                        batch_label = self.train_label[i:i + batch_size]
-                        output = model(batch_data)
-                        loss = criterion(output, batch_label)
-                        cur_loss += loss
-            return {"loss": cur_loss, "info": {"budget": budget}}
-        
-    NS = hpns.NameServer(run_id='Res',nic_name=None, working_directory=None)
-    ns_host, ns_port = NS.start()
-    workers = [ResnetWorker(train_data, train_label, nameserver=ns_host, nameserver_port=ns_port, run_id='ns') for i in range(num_workers)]
-    [w.run(background=True) for w in workers]
-
-    bohb = BOHB(configspace=CS, run_id='ns', eta=2, min_budget=5, max_budget=20)
-    res = bohb.run(n_iterations=10)
-
-    print("Best found configuration:", res.get_id2config_mapping()[res.get_incumbent_id()]['config'])
-
-    bohb.shutdown(shutdown_workers=True)
-    NS.shutdown()
-
-    cave = CAVE(folders=[res], output_dir="cave_output")
-    cave.analyze()
-                        
+    Returns:
+        dict: A dictionary containing the 'loss' and other information.
+    """
+    # Create an instance of ResnetWrapper with the provided config
+    model = ResnetWrapper(**config, Valid_X=X_valid, Valid_y=y_valid)
     
+    # Fit the model using the training data
+    model.fit(X_train, y_train)
+
+    # Here, you should implement the logic to evaluate the model.
+    # For instance, you can use the model.score() method if you have it,
+    # or any other metric like validation loss, accuracy, etc.
+    # Assuming model.score() returns the accuracy, and you want to minimize the loss:
+    validation_loss = 1 - model.score(X_valid, y_valid)  # Example metric
+
+    # Return the result in the required format for BOAH optimization
+    return {'loss': validation_loss, 'info': {'budget': budget}}
+
 def run_resnet18():
     resnet18_kappa = []
     resnet18_ece = []
@@ -1109,7 +1331,12 @@ def run_resnet18():
     resnet18_probs_labels = []
     storage_dict = {}
 
+
+
+    # Grid search for best hyperparameters
+
     resnet = models.resnet18(pretrained=True)
+
     num_ftrs = resnet.fc.in_features
     resnet.fc = nn.Linear(num_ftrs, 18)
 
@@ -1215,7 +1442,14 @@ def run_resnet18():
     train_images = torch.cat((train_images, train_images, train_images), dim=1)
     valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
 
-    # run_BOAH(resnet, fsdk18_train_images, fsdk18_train_labels)
+
+    fit_model = run_BOAH(ResnetWrapper,
+        fsdk18_train_images,
+        fsdk18_train_labels,
+        fsdk18_valid_images,
+        fsdk18_valid_labels)
+    print(fit_model)
+    quit(0)
 
     # Bayesian optimization for best hyperparameters
     time_limit = 7200 # 2 hours  
@@ -1490,17 +1724,16 @@ if __name__ == "__main__":
     # print("Running RF tuning \n")
     # run_naive_rf()
 
-    # print("Running CNN32 tuning \n")
-    # run_cnn32()
+    print("Running CNN32 tuning \n")
+    run_cnn32()
 
     # print("Running CNN32_2l tuning \n")
     # run_cnn32_2l()
 
-    print("Running CNN32_5l tuning \n")
-    run_cnn32_5l()
+    # print("Running CNN32_5l tuning \n")
+    # run_cnn32_5l()
 
-    print("Running Resnet tuning \n")
-    run_resnet18()
-
+    # print("Running Resnet tuning \n")
+    # run_resnet18()
     
 
