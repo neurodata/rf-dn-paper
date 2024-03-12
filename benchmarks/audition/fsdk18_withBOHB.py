@@ -237,21 +237,19 @@ def run_naive_rf():
     navie_rf_probs_labels = []
     storage_dict = {}
 
-    RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
-    fit_model = run_BOAH(RF,
-        fsdk18_train_images,
-        fsdk18_train_labels)
-    print(fit_model)
-    quit(0)
-    # # Bayesian search for best parameters
+    # RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+
+    # ### Bayesian search for best parameters
     # time_limit = 7200 # 2 hours  
     # deadline_stopper = DeadlineStopper(time_limit)
     # start_time = time.perf_counter()
     # RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
     # param_space = {
-    #     'n_estimators': list(range(400, 501, 100)), 
-    #     'max_depth': list(range(2, 21, 2)), 
+    #     'n_estimators': list(range(400, 1201, 100)), 
+    #     'max_depth': list(range(2, 21, 2)),
+    #     'min_samples_split': list(range(2, 11, 2)),
+    #     'min_samples_leaf': list(range(1, 11, 2)),        
     # }
 
     # Bayes = BayesSearchCV(
@@ -290,7 +288,7 @@ def run_naive_rf():
             # RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
             # Best set of hyperparameters of 15 classes:
-            RF_best = RandomForestClassifier(n_estimators=400, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+            RF_best = RandomForestClassifier(n_estimators=634, max_depth=35, min_samples_split=6, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
             cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
                 RF_best,
@@ -343,7 +341,7 @@ def run_naive_rf():
         pickle.dump(RF_best, f)
 
     print("naive_rf finished")
-    write_result(prefix + "naive_rf_kappa_best.txt", naive_rf_kappa)
+    write_result(prefix + "naive_rf_kappa_best_smac.txt", naive_rf_kappa)
     write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
     write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
     write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
@@ -362,211 +360,204 @@ def run_cnn32():
     cnn32_probs_labels = []
     storage_dict = {}
 
-    cnn32 = SimpleCNN32Filter(num_classes=18)
+    # cnn32 = SimpleCNN32Filter(num_classes=18)
 
-    class CNN32Wrapper(BaseEstimator):
-        def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = cnn32.to(self.device)
-            self.lr = lr
-            self.batch_size = batch_size
-            self.epochs = epochs
-            self.criterion = criterion
-            self.optimizer_name = optimizer_name
-            self.Valid_X = Valid_X
-            self.Valid_y = Valid_y
-            self.trial_start_time = time.perf_counter()
-            self.trial_end_time = None
+    # class CNN32Wrapper(BaseEstimator):
+    #     def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
+    #         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #         self.model = cnn32.to(self.device)
+    #         self.lr = lr
+    #         self.batch_size = batch_size
+    #         self.epochs = epochs
+    #         self.criterion = criterion
+    #         self.optimizer_name = optimizer_name
+    #         self.Valid_X = Valid_X
+    #         self.Valid_y = Valid_y
+    #         self.trial_start_time = time.perf_counter()
+    #         self.trial_end_time = None
 
-            if optimizer_name == 'sgd':
-                self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
-            elif optimizer_name == 'adam':
-                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-            else:
-                raise ValueError(f"Unknown optimizer: {optimizer_name}")
+    #         if optimizer_name == 'sgd':
+    #             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
+    #         elif optimizer_name == 'adam':
+    #             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+    #         else:
+    #             raise ValueError(f"Unknown optimizer: {optimizer_name}")
 
-        def fit(self, X, y):
-            max_epochs = [0]
-            X = X.reshape(-1, 1, 32, 32)
-            self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
-            model = self.model
-            criterion = self.criterion
-            optimizer = self.optimizer
-            prev_loss = float("inf")
-            flag = 0
-            for epoch in range(self.epochs):
-                model.train()
-                for i in range(0, len(X), self.batch_size):
-                    inputs = X[i : i + self.batch_size].to(self.device)
-                    labels = y[i : i + self.batch_size].to(self.device)
-                    optimizer.zero_grad()
-                    if inputs.shape[0] <= 2:
-                        continue
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-                    loss.backward()
-                    optimizer.step()
+    #     def fit(self, X, y):
+    #         max_epochs = [0]
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         criterion = self.criterion
+    #         optimizer = self.optimizer
+    #         prev_loss = float("inf")
+    #         flag = 0
+    #         for epoch in range(self.epochs):
+    #             model.train()
+    #             for i in range(0, len(X), self.batch_size):
+    #                 inputs = X[i : i + self.batch_size].to(self.device)
+    #                 labels = y[i : i + self.batch_size].to(self.device)
+    #                 optimizer.zero_grad()
+    #                 if inputs.shape[0] <= 2:
+    #                     continue
+    #                 outputs = model(inputs)
+    #                 loss = criterion(outputs, labels)
+    #                 loss.backward()
+    #                 optimizer.step()
 
-                model.eval()
-                cur_loss = 0
-                with torch.no_grad():
-                    for i in range(0, len(self.Valid_X), self.batch_size):
-                        # get the inputs
-                        inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
-                        labels = self.Valid_y[i : i + self.batch_size].to(self.device)
-                        if inputs.shape[0] == 1:
-                            inputs = torch.cat((inputs, inputs, inputs), dim = 0)
-                            labels = torch.cat((labels, labels, labels), dim = 0)
+    #             model.eval()
+    #             cur_loss = 0
+    #             with torch.no_grad():
+    #                 for i in range(0, len(self.Valid_X), self.batch_size):
+    #                     # get the inputs
+    #                     inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
+    #                     labels = self.Valid_y[i : i + self.batch_size].to(self.device)
+    #                     if inputs.shape[0] == 1:
+    #                         inputs = torch.cat((inputs, inputs, inputs), dim = 0)
+    #                         labels = torch.cat((labels, labels, labels), dim = 0)
 
-                        # forward
-                        outputs = model(inputs)
-                        loss = criterion(outputs, labels)
-                        cur_loss += loss
-                # early stop if 3 epochs in a row no loss decrease
-                if cur_loss < prev_loss:
-                    prev_loss = cur_loss
-                    flag = 0
-                else:
-                    flag += 1
-                    if flag >= 3:
-                        max_epochs.append(epoch)
-                        break
-            return self
+    #                     # forward
+    #                     outputs = model(inputs)
+    #                     loss = criterion(outputs, labels)
+    #                     cur_loss += loss
+    #             # early stop if 3 epochs in a row no loss decrease
+    #             if cur_loss < prev_loss:
+    #                 prev_loss = cur_loss
+    #                 flag = 0
+    #             else:
+    #                 flag += 1
+    #                 if flag >= 3:
+    #                     max_epochs.append(epoch)
+    #                     break
+    #         return self
         
-        def predict(self, X):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            test_preds = []
-            with torch.no_grad():
-                inputs = X.to(self.device)
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                # predicted = predicted.unsqueeze(0)
-                # test_preds = np.concatenate((test_preds, predicted.tolist()))
-                return predicted.cpu().numpy()
+    #     def predict(self, X):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         test_preds = []
+    #         with torch.no_grad():
+    #             inputs = X.to(self.device)
+    #             outputs = model(inputs)
+    #             _, predicted = torch.max(outputs.data, 1)
+    #             # predicted = predicted.unsqueeze(0)
+    #             # test_preds = np.concatenate((test_preds, predicted.tolist()))
+    #             return predicted.cpu().numpy()
             
-        def predict_proba(self, X):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            test_probs = []
-            with torch.no_grad():
-                outputs = model(X.to(self.device))
-                test_prob = nn.Softmax(dim=1)(outputs)
-                test_probs = test_prob.cpu().numpy()
-                return test_probs
+    #     def predict_proba(self, X):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         test_probs = []
+    #         with torch.no_grad():
+    #             outputs = model(X.to(self.device))
+    #             test_prob = nn.Softmax(dim=1)(outputs)
+    #             test_probs = test_prob.cpu().numpy()
+    #             return test_probs
 
-        def score(self, X, y):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            predictions = self.predict(X)
-            acc = accuracy_score(y, predictions)
-            self.trial_end_time = time.perf_counter()
-            valid_pred = self.predict(self.Valid_X)
-            valid_acc = accuracy_score(self.Valid_y, valid_pred)
-            valid_probs = self.predict_proba(self.Valid_X)
-            valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
-            valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
-            with open('CNN32_BO_results_2h.txt', 'a') as f:
-                f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
+    #     def score(self, X, y):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         predictions = self.predict(X)
+    #         acc = accuracy_score(y, predictions)
+    #         self.trial_end_time = time.perf_counter()
+    #         valid_pred = self.predict(self.Valid_X)
+    #         valid_acc = accuracy_score(self.Valid_y, valid_pred)
+    #         valid_probs = self.predict_proba(self.Valid_X)
+    #         valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
+    #         valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
+    #         with open('CNN32_BO_results_2h.txt', 'a') as f:
+    #             f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
 
-            return acc
+    #         return acc
 
-    # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
-    scaler = StandardScaler()
-    train_images = scaler.fit_transform(fsdk18_train_images)
-    valid_images = scaler.transform(fsdk18_valid_images)
+    # # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
+    # scaler = StandardScaler()
+    # train_images = scaler.fit_transform(fsdk18_train_images)
+    # valid_images = scaler.transform(fsdk18_valid_images)
     
-    train_images = torch.FloatTensor(train_images).unsqueeze(1)
-    train_labels = torch.LongTensor(fsdk18_train_labels)
-    valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
-    valid_labels = torch.LongTensor(fsdk18_valid_labels)
+    # train_images = torch.FloatTensor(train_images).unsqueeze(1)
+    # train_labels = torch.LongTensor(fsdk18_train_labels)
+    # valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
+    # valid_labels = torch.LongTensor(fsdk18_valid_labels)
 
-    # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
+    # # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
 
-    # Bayesian optimization for best hyperparameters
-    time_limit = 240 # 2 hours  
-    deadline_stopper = DeadlineStopper(time_limit)
-    param_space={
-        "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-        "lr": (0.001, 0.1),
-        "epochs": (40, 120),
-        "optimizer_name": ["adam", "sgd"],
-        }
+    # # Bayesian optimization for best hyperparameters
+    # time_limit = 240 # 2 hours  
+    # deadline_stopper = DeadlineStopper(time_limit)
+    # param_space={
+    #     "batch_size": (32, 2048),
+    #     "lr": (0.001, 0.1),
+    #     "epochs": (30, 180),
+    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
+    #     "optimizer_name": ["adam", "sgd"],
+    #     }
 
-    Bayes = BayesSearchCV(
-        estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-        search_spaces=param_space,
-        n_iter=50,
-        cv=3,
-        verbose=1,
-        n_jobs=-1,
-    )
+    # Bayes = BayesSearchCV(
+    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
+    #     search_spaces=param_space,
+    #     n_iter=50,
+    #     cv=3,
+    #     verbose=1,
+    #     n_jobs=-1,
+    # )
 
-    with open('CNN32_BO_results_2h.txt', 'w') as f:
-        f.write("CNN32_BO_2h Results each epochs: \n")
+    # with open('CNN32_BO_results_2h.txt', 'w') as f:
+    #     pass
 
-    start_time = time.perf_counter()
-    Bayes.fit(train_images, train_labels, callback=deadline_stopper)
-    end_time = time.perf_counter()
+    # start_time = time.perf_counter()
+    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
+    # end_time = time.perf_counter()
 
-    iteration_times = deadline_stopper.iter_time
-    search_time = end_time - start_time
-    results = Bayes.cv_results_
-    results_df = pd.DataFrame(results)
+    # iteration_times = deadline_stopper.iter_time
+    # search_time = end_time - start_time
+    # results = Bayes.cv_results_
+    # results_df = pd.DataFrame(results)
 
-    best_params = Bayes.best_params_
-    print("Best Accuracy:", Bayes.best_score_)
-    print("Best Parameters:", best_params)
-    print("Bayesian Search Time:", search_time)
+    # best_params = Bayes.best_params_
+    # print("Best Accuracy:", Bayes.best_score_)
+    # print("Best Parameters:", best_params)
+    # print("Bayesian Search Time:", search_time)
 
-    accuracy, kappa, ece, Time = [], [], [], []
+    # accuracy, kappa, ece, Time = [], [], [], []
 
-    newresults = []
-    with open('CNN32_BO_results_2h.txt', 'r') as f:
-        data = f.readlines()
-        linect = 0
-        for line in data:
-            if "Time:" in line:
-                index = line.find("Time:")
+    # newresults = []
+    # with open('CNN32_BO_results_2h.txt', 'r') as f:
+    #     data = f.readlines()
+    #     linect = 0
+    #     for line in data:
+    #         if "Time:" in line:
+    #             index = line.find("Time:")
 
-                i = linect // 3 #+ linect % 3
+    #             i = linect // 3 #+ linect % 3
 
-                newtime = iteration_times[i]/3
-                linect += 1
+    #             newtime = iteration_times[i]/3
+    #             linect += 1
                 
-                newline = line[:index + len("Time: ")] + str(newtime) + "\n"
-                newresults.append(newline)
-            else:
-                newresults.append(line)
+    #             newline = line[:index + len("Time: ")] + str(newtime) + "\n"
+    #             newresults.append(newline)
+    #         else:
+    #             newresults.append(line)
 
-    with open('CNN32_BO_results_2h.txt', 'w') as f:
-        f.writelines(newresults)
+    # with open('CNN32_BO_results_2h.txt', 'w') as f:
+    #     f.writelines(newresults)
 
-    with open('CNN32_BO_results_2h.txt', 'r') as f:
-        data = f.readlines()
+    # with open('CNN32_BO_results_2h.txt', 'r') as f:
+    #     data = f.readlines()
 
-    for line in data:
-        if "Time: " in line:
-            numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
-            if numbers:
-                accuracy.append(float(numbers[0]))
-                kappa.append(float(numbers[1]))
-                ece.append(float(numbers[2]))
-                Time.append(float(numbers[3]))
+    # for line in data:
+    #     if "Time: " in line:
+    #         numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
+    #         if numbers:
+    #             accuracy.append(float(numbers[0]))
+    #             kappa.append(float(numbers[1]))
+    #             ece.append(float(numbers[2]))
+    #             Time.append(float(numbers[3]))
 
-    print("sum time:", np.sum(Time)) 
+    # print("sum time:", np.sum(Time)) 
 
-
-
-
-    ### Testing BOHB on CNN32
-    # run_BOHB()
-
-
-    
 
 
     ### Best set of hyperparameters for 8 classes:
@@ -578,103 +569,104 @@ def run_cnn32():
 
 
     
-    # for classes in classes_space:
-    #     d1 = {}
+    for classes in classes_space:
+        d1 = {}
 
-    #     # cohen_kappa vs num training samples (cnn32)
-    #     for samples in samples_space:
-    #         l3 = []
-    #         # train data
-    #         cnn32 = SimpleCNN32Filter(len(classes))
-    #         # 3000 samples, 80% train is 2400 samples, 20% test
-    #         train_images = trainx.copy()
-    #         train_labels = trainy.copy()
-    #         # reshape in 4d array
-    #         test_images = testx.copy()
-    #         test_labels = testy.copy()
+        # cohen_kappa vs num training samples (cnn32)
+        for samples in samples_space:
+            l3 = []
+            # train data
+            cnn32 = SimpleCNN32Filter(len(classes))
+            # 3000 samples, 80% train is 2400 samples, 20% test
+            train_images = trainx.copy()
+            train_labels = trainy.copy()
+            # reshape in 4d array
+            test_images = testx.copy()
+            test_labels = testy.copy()
 
-    #         (
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #         ) = prepare_data(
-    #             train_images, train_labels, test_images, test_labels, samples, classes
-    #         )
+            (
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+            ) = prepare_data(
+                train_images, train_labels, test_images, test_labels, samples, classes
+            )
 
-    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-    #             cnn32,
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #             optimizer_name="adam",
-    #             epochs=100,
-    #             batch=1024,
-    #             lr=0.001,
-    #         )
-    #         cnn32_kappa.append(cohen_kappa)
-    #         cnn32_ece.append(ece)
-    #         cnn32_train_time.append(train_time)
-    #         cnn32_test_time.append(test_time)
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+                cnn32,
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+                optimizer_name="adam",
+                epochs=63,
+                batch=881,
+                lr=0.0011895644730894593,
+                weight_decay=0.02881406216856244,
+            )
+            cnn32_kappa.append(cohen_kappa)
+            cnn32_ece.append(ece)
+            cnn32_train_time.append(train_time)
+            cnn32_test_time.append(test_time)
 
-    #         actual_test_labels = []
-    #         for i in range(len(test_labels)):
-    #             actual_test_labels.append(int(classes[test_labels[i]]))
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
 
-    #         sorted_classes = sorted(classes)
-    #         cnn32_probs_labels.append("Classes:" + str(sorted_classes))
+            sorted_classes = sorted(classes)
+            cnn32_probs_labels.append("Classes:" + str(sorted_classes))
 
-    #         cnn32_probs_labels.append("Sample size:" + str(samples))
+            cnn32_probs_labels.append("Sample size:" + str(samples))
             
-    #         actual_preds = []
-    #         for i in range(len(test_preds)):
-    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
-    #         for i in range(len(test_probs)):
-    #             cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-    #         cnn32_probs_labels.append(" \n")
+            for i in range(len(test_probs)):
+                cnn32_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+            cnn32_probs_labels.append(" \n")
 
-    #         for i in range(len(test_probs)):
-    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
 
-    #         d1[samples] = l3
+            d1[samples] = l3
 
-    #     storage_dict[tuple(sorted(classes))] = d1
+        storage_dict[tuple(sorted(classes))] = d1
 
-    # # switch the classes and sample sizes
-    # switched_storage_dict = {}
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
     
-    # for classes, class_data in storage_dict.items():
-    #     for samples, data in class_data.items():
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
 
-    #         if samples not in switched_storage_dict:
-    #             switched_storage_dict[samples] = {}
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
 
-    #         if classes not in switched_storage_dict[samples]:
-    #             switched_storage_dict[samples][classes] = data
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
 
-    # with open(prefix +'cnn32_switched_storage_dict.pkl', 'wb') as f:
-    #     pickle.dump(switched_storage_dict, f)
+    with open(prefix +'cnn32_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
 
-    # # save the model
-    # with open(prefix + 'cnn32.pkl', 'wb') as f:
-    #     pickle.dump(cnn32, f)
+    # save the model
+    with open(prefix + 'cnn32.pkl', 'wb') as f:
+        pickle.dump(cnn32, f)
 
-    # print("cnn32 finished")
-    # write_result(prefix + "cnn32_kappa_best.txt", cnn32_kappa)
-    # write_result(prefix + "cnn32_ece.txt", cnn32_ece)
-    # write_result(prefix + "cnn32_train_time.txt", cnn32_train_time)
-    # write_result(prefix + "cnn32_test_time.txt", cnn32_test_time)
-    # write_result(prefix + "cnn32_probs&labels.txt", cnn32_probs_labels)
-    # write_json(prefix + "cnn32_kappa_best.json", cnn32_kappa)
-    # write_json(prefix + "cnn32_ece.json", cnn32_ece)
-    # write_json(prefix + "cnn32_train_time.json", cnn32_train_time)
-    # write_json(prefix + "cnn32_test_time.json", cnn32_test_time)
+    print("cnn32 finished")
+    write_result(prefix + "cnn32_kappa_best_smac.txt", cnn32_kappa)
+    write_result(prefix + "cnn32_ece_best.txt", cnn32_ece)
+    write_result(prefix + "cnn32_train_time_best.txt", cnn32_train_time)
+    write_result(prefix + "cnn32_test_time_best.txt", cnn32_test_time)
+    write_result(prefix + "cnn32_probs&labels_best.txt", cnn32_probs_labels)
+    write_json(prefix + "cnn32_kappa_best.json", cnn32_kappa)
+    write_json(prefix + "cnn32_ece_best.json", cnn32_ece)
+    write_json(prefix + "cnn32_train_time_best.json", cnn32_train_time)
+    write_json(prefix + "cnn32_test_time_best.json", cnn32_test_time)
 
 
 def run_cnn32_2l():
@@ -685,199 +677,200 @@ def run_cnn32_2l():
     cnn32_2l_probs_labels = []
     storage_dict = {}
 
-    cnn32_2l = SimpleCNN32Filter2Layers(num_classes=18)
+    # cnn32_2l = SimpleCNN32Filter2Layers(num_classes=18)
 
-    class CNN32Wrapper(BaseEstimator):
-        def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = cnn32_2l.to(self.device)
-            self.lr = lr
-            self.batch_size = batch_size
-            self.epochs = epochs
-            self.criterion = criterion
-            self.optimizer_name = optimizer_name
-            self.Valid_X = Valid_X
-            self.Valid_y = Valid_y
-            self.trial_start_time = time.perf_counter()
-            self.trial_end_time = None
+    # class CNN32Wrapper(BaseEstimator):
+    #     def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
+    #         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #         self.model = cnn32_2l.to(self.device)
+    #         self.lr = lr
+    #         self.batch_size = batch_size
+    #         self.epochs = epochs
+    #         self.criterion = criterion
+    #         self.optimizer_name = optimizer_name
+    #         self.Valid_X = Valid_X
+    #         self.Valid_y = Valid_y
+    #         self.trial_start_time = time.perf_counter()
+    #         self.trial_end_time = None
 
-            if optimizer_name == 'sgd':
-                self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
-            elif optimizer_name == 'adam':
-                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-            else:
-                raise ValueError(f"Unknown optimizer: {optimizer_name}")
+    #         if optimizer_name == 'sgd':
+    #             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
+    #         elif optimizer_name == 'adam':
+    #             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+    #         else:
+    #             raise ValueError(f"Unknown optimizer: {optimizer_name}")
 
-        def fit(self, X, y):
-            max_epochs = [0]
-            X = X.reshape(-1, 1, 32, 32)
-            self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
-            model = self.model
-            criterion = self.criterion
-            optimizer = self.optimizer
-            prev_loss = float("inf")
-            flag = 0
-            for epoch in range(self.epochs):
-                model.train()
-                for i in range(0, len(X), self.batch_size):
-                    inputs = X[i : i + self.batch_size].to(self.device)
-                    labels = y[i : i + self.batch_size].to(self.device)
-                    optimizer.zero_grad()
-                    if inputs.shape[0] <= 2:
-                        continue
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-                    loss.backward()
-                    optimizer.step()
+    #     def fit(self, X, y):
+    #         max_epochs = [0]
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         criterion = self.criterion
+    #         optimizer = self.optimizer
+    #         prev_loss = float("inf")
+    #         flag = 0
+    #         for epoch in range(self.epochs):
+    #             model.train()
+    #             for i in range(0, len(X), self.batch_size):
+    #                 inputs = X[i : i + self.batch_size].to(self.device)
+    #                 labels = y[i : i + self.batch_size].to(self.device)
+    #                 optimizer.zero_grad()
+    #                 if inputs.shape[0] <= 2:
+    #                     continue
+    #                 outputs = model(inputs)
+    #                 loss = criterion(outputs, labels)
+    #                 loss.backward()
+    #                 optimizer.step()
 
-                model.eval()
-                cur_loss = 0
-                with torch.no_grad():
-                    for i in range(0, len(self.Valid_X), self.batch_size):
-                        # get the inputs
-                        inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
-                        labels = self.Valid_y[i : i + self.batch_size].to(self.device)
-                        if inputs.shape[0] == 1:
-                            inputs = torch.cat((inputs, inputs, inputs), dim = 0)
-                            labels = torch.cat((labels, labels, labels), dim = 0)
+    #             model.eval()
+    #             cur_loss = 0
+    #             with torch.no_grad():
+    #                 for i in range(0, len(self.Valid_X), self.batch_size):
+    #                     # get the inputs
+    #                     inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
+    #                     labels = self.Valid_y[i : i + self.batch_size].to(self.device)
+    #                     if inputs.shape[0] == 1:
+    #                         inputs = torch.cat((inputs, inputs, inputs), dim = 0)
+    #                         labels = torch.cat((labels, labels, labels), dim = 0)
 
-                        # forward
-                        outputs = model(inputs)
-                        loss = criterion(outputs, labels)
-                        cur_loss += loss
-                # early stop if 3 epochs in a row no loss decrease
-                if cur_loss < prev_loss:
-                    prev_loss = cur_loss
-                    flag = 0
-                else:
-                    flag += 1
-                    if flag >= 3:
-                        max_epochs.append(epoch)
-                        break
-            return self
+    #                     # forward
+    #                     outputs = model(inputs)
+    #                     loss = criterion(outputs, labels)
+    #                     cur_loss += loss
+    #             # early stop if 3 epochs in a row no loss decrease
+    #             if cur_loss < prev_loss:
+    #                 prev_loss = cur_loss
+    #                 flag = 0
+    #             else:
+    #                 flag += 1
+    #                 if flag >= 3:
+    #                     max_epochs.append(epoch)
+    #                     break
+    #         return self
         
-        def predict(self, X):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            with torch.no_grad():
-                inputs = X.to(self.device)
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                return predicted.cpu().numpy()
+    #     def predict(self, X):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         with torch.no_grad():
+    #             inputs = X.to(self.device)
+    #             outputs = model(inputs)
+    #             _, predicted = torch.max(outputs.data, 1)
+    #             return predicted.cpu().numpy()
             
-        def predict_proba(self, X):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            test_probs = []
-            with torch.no_grad():
-                outputs = model(X.to(self.device))
-                test_prob = nn.Softmax(dim=1)(outputs)
-                test_probs = test_prob.cpu().numpy()
-                return test_probs
+    #     def predict_proba(self, X):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         test_probs = []
+    #         with torch.no_grad():
+    #             outputs = model(X.to(self.device))
+    #             test_prob = nn.Softmax(dim=1)(outputs)
+    #             test_probs = test_prob.cpu().numpy()
+    #             return test_probs
 
-        def score(self, X, y):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            predictions = self.predict(X)
-            acc = accuracy_score(y, predictions)
-            self.trial_end_time = time.perf_counter()
-            valid_pred = self.predict(self.Valid_X)
-            valid_acc = accuracy_score(self.Valid_y, valid_pred)
-            valid_probs = self.predict_proba(self.Valid_X)
-            valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
-            valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
-            with open('CNN32_2l_BO_results_2h.txt', 'a') as f:
-                f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
+    #     def score(self, X, y):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         predictions = self.predict(X)
+    #         acc = accuracy_score(y, predictions)
+    #         self.trial_end_time = time.perf_counter()
+    #         valid_pred = self.predict(self.Valid_X)
+    #         valid_acc = accuracy_score(self.Valid_y, valid_pred)
+    #         valid_probs = self.predict_proba(self.Valid_X)
+    #         valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
+    #         valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
+    #         with open('CNN32_2l_BO_results_2h.txt', 'a') as f:
+    #             f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
 
-            return acc
+    #         return acc
 
-    # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
-    scaler = StandardScaler()
-    train_images = scaler.fit_transform(fsdk18_train_images)
-    valid_images = scaler.transform(fsdk18_valid_images)
+    # # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
+    # scaler = StandardScaler()
+    # train_images = scaler.fit_transform(fsdk18_train_images)
+    # valid_images = scaler.transform(fsdk18_valid_images)
     
-    train_images = torch.FloatTensor(train_images).unsqueeze(1)
-    train_labels = torch.LongTensor(fsdk18_train_labels)
-    valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
-    valid_labels = torch.LongTensor(fsdk18_valid_labels)
+    # train_images = torch.FloatTensor(train_images).unsqueeze(1)
+    # train_labels = torch.LongTensor(fsdk18_train_labels)
+    # valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
+    # valid_labels = torch.LongTensor(fsdk18_valid_labels)
 
-    # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
+    # # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
 
-    # Bayesian optimization for best hyperparameters
-    time_limit = 7200 # 2 hours  
-    deadline_stopper = DeadlineStopper(time_limit)
-    param_space={
-        "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-        "lr": (0.001, 0.1),
-        "epochs": (40, 120),
-        "optimizer_name": ["adam", "sgd"],
-        }
+    # # Bayesian optimization for best hyperparameters
+    # time_limit = 7200 # 2 hours  
+    # deadline_stopper = DeadlineStopper(time_limit)
+    # param_space={
+    #     "batch_size": (32, 2048),
+    #     "lr": (0.001, 0.1),
+    #     "epochs": (30, 180),
+    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
+    #     "optimizer_name": ["adam", "sgd"],
+    #     }
 
-    Bayes = BayesSearchCV(
-        estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-        search_spaces=param_space,
-        n_iter=50,
-        cv=3,
-        verbose=1,
-        n_jobs=-1,
-    )
+    # Bayes = BayesSearchCV(
+    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
+    #     search_spaces=param_space,
+    #     n_iter=50,
+    #     cv=3,
+    #     verbose=1,
+    #     n_jobs=-1,
+    # )
 
-    with open('CNN32_2l_BO_results_2h.txt', 'w') as f:
-        f.write("CNN32_2l_BO_2h Results each epochs: \n")
+    # with open('CNN32_2l_BO_results_2h.txt', 'w') as f:
+    #     pass
 
-    start_time = time.perf_counter()
-    Bayes.fit(train_images, train_labels, callback=deadline_stopper)
-    end_time = time.perf_counter()
+    # start_time = time.perf_counter()
+    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
+    # end_time = time.perf_counter()
 
-    iteration_times = deadline_stopper.iter_time
-    search_time = end_time - start_time
-    results = Bayes.cv_results_
-    results_df = pd.DataFrame(results)
+    # iteration_times = deadline_stopper.iter_time
+    # search_time = end_time - start_time
+    # results = Bayes.cv_results_
+    # results_df = pd.DataFrame(results)
 
-    best_params = Bayes.best_params_
-    print("Best Accuracy:", Bayes.best_score_)
-    print("Best Parameters:", best_params)
-    print("Bayesian Search Time:", search_time)
+    # best_params = Bayes.best_params_
+    # print("Best Accuracy:", Bayes.best_score_)
+    # print("Best Parameters:", best_params)
+    # print("Bayesian Search Time:", search_time)
 
-    accuracy, kappa, ece, Time = [], [], [], []
+    # accuracy, kappa, ece, Time = [], [], [], []
 
-    newresults = []
-    with open('CNN32_2l_BO_results_2h.txt', 'r') as f:
-        data = f.readlines()
-        linect = 0
-        for line in data:
-            if "Time:" in line:
-                index = line.find("Time:")
+    # newresults = []
+    # with open('CNN32_2l_BO_results_2h.txt', 'r') as f:
+    #     data = f.readlines()
+    #     linect = 0
+    #     for line in data:
+    #         if "Time:" in line:
+    #             index = line.find("Time:")
 
-                i = linect // 3 #+ linect % 3
+    #             i = linect // 3 #+ linect % 3
 
-                newtime = iteration_times[i]/3
-                linect += 1
+    #             newtime = iteration_times[i]/3
+    #             linect += 1
                 
-                newline = line[:index + len("Time: ")] + str(newtime) + "\n"
-                newresults.append(newline)
-            else:
-                newresults.append(line)
+    #             newline = line[:index + len("Time: ")] + str(newtime) + "\n"
+    #             newresults.append(newline)
+    #         else:
+    #             newresults.append(line)
 
-    with open('CNN32_2l_BO_results_2h.txt', 'w') as f:
-        f.writelines(newresults)
+    # with open('CNN32_2l_BO_results_2h.txt', 'w') as f:
+    #     f.writelines(newresults)
 
-    with open('CNN32_2l_BO_results_2h.txt', 'r') as f:
-        data = f.readlines()
+    # with open('CNN32_2l_BO_results_2h.txt', 'r') as f:
+    #     data = f.readlines()
 
-    for line in data:
-        if "Time: " in line:
-            numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
-            if numbers:
-                accuracy.append(float(numbers[0]))
-                kappa.append(float(numbers[1]))
-                ece.append(float(numbers[2]))
-                Time.append(float(numbers[3]))
+    # for line in data:
+    #     if "Time: " in line:
+    #         numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
+    #         if numbers:
+    #             accuracy.append(float(numbers[0]))
+    #             kappa.append(float(numbers[1]))
+    #             ece.append(float(numbers[2]))
+    #             Time.append(float(numbers[3]))
 
-    print("sum time:", np.sum(iteration_times))
+    # print("sum time:", np.sum(iteration_times))
    
 
 
@@ -885,103 +878,104 @@ def run_cnn32_2l():
 
 
 
-    # for classes in classes_space:
-    #     d1 = {}
+    for classes in classes_space:
+        d1 = {}
 
-    #     # cohen_kappa vs num training samples (cnn32_2l)
-    #     for samples in samples_space:
-    #         l3 = []
-    #         # train data
-    #         cnn32_2l = SimpleCNN32Filter2Layers(len(classes))
-    #         # 3000 samples, 80% train is 2400 samples, 20% test
-    #         train_images = trainx.copy()
-    #         train_labels = trainy.copy()
-    #         # reshape in 4d array
-    #         test_images = testx.copy()
-    #         test_labels = testy.copy()
+        # cohen_kappa vs num training samples (cnn32_2l)
+        for samples in samples_space:
+            l3 = []
+            # train data
+            cnn32_2l = SimpleCNN32Filter2Layers(len(classes))
+            # 3000 samples, 80% train is 2400 samples, 20% test
+            train_images = trainx.copy()
+            train_labels = trainy.copy()
+            # reshape in 4d array
+            test_images = testx.copy()
+            test_labels = testy.copy()
 
-    #         (
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #         ) = prepare_data(
-    #             train_images, train_labels, test_images, test_labels, samples, classes
-    #         )
+            (
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+            ) = prepare_data(
+                train_images, train_labels, test_images, test_labels, samples, classes
+            )
 
-    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-    #             cnn32_2l,
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #             optimizer_name="adam",
-    #             batch=256,
-    #             epochs=100,
-    #             lr=0.01,
-    #         )
-    #         cnn32_2l_kappa.append(cohen_kappa)
-    #         cnn32_2l_ece.append(ece)
-    #         cnn32_2l_train_time.append(train_time)
-    #         cnn32_2l_test_time.append(test_time)
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+                cnn32_2l,
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+                optimizer_name="adam",
+                batch=248,
+                epochs=100,
+                lr=0.001936799454289005,
+                weight_decay=0.00010614767181282957,
+            )
+            cnn32_2l_kappa.append(cohen_kappa)
+            cnn32_2l_ece.append(ece)
+            cnn32_2l_train_time.append(train_time)
+            cnn32_2l_test_time.append(test_time)
 
-    #         actual_test_labels = []
-    #         for i in range(len(test_labels)):
-    #             actual_test_labels.append(int(classes[test_labels[i]]))
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
 
-    #         sorted_classes = sorted(classes)
-    #         cnn32_2l_probs_labels.append("Classes:" + str(classes))
+            sorted_classes = sorted(classes)
+            cnn32_2l_probs_labels.append("Classes:" + str(classes))
 
-    #         cnn32_2l_probs_labels.append("Sample size:" + str(samples))
+            cnn32_2l_probs_labels.append("Sample size:" + str(samples))
 
-    #         actual_preds = []
-    #         for i in range(len(test_preds)):
-    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
             
-    #         for i in range(len(test_probs)):
-    #             cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-    #         cnn32_2l_probs_labels.append(" \n")
+            for i in range(len(test_probs)):
+                cnn32_2l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+            cnn32_2l_probs_labels.append(" \n")
 
-    #         for i in range(len(test_probs)):
-    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
 
-    #         d1[samples] = l3
+            d1[samples] = l3
 
-    #     storage_dict[tuple(sorted(classes))] = d1
+        storage_dict[tuple(sorted(classes))] = d1
 
-    # # switch the classes and sample sizes
-    # switched_storage_dict = {}
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
 
-    # for classes, class_data in storage_dict.items():
-    #     for samples, data in class_data.items():
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
 
-    #         if samples not in switched_storage_dict:
-    #             switched_storage_dict[samples] = {}
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
 
-    #         if classes not in switched_storage_dict[samples]:
-    #             switched_storage_dict[samples][classes] = data
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
 
-    # with open(prefix + 'cnn32_2l_switched_storage_dict.pkl', 'wb') as f:
-    #     pickle.dump(switched_storage_dict, f)
+    with open(prefix + 'cnn32_2l_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
 
-    # # save the model
-    # with open(prefix + 'cnn32_2l.pkl', 'wb') as f:
-    #     pickle.dump(cnn32_2l, f)
+    # save the model
+    with open(prefix + 'cnn32_2l.pkl', 'wb') as f:
+        pickle.dump(cnn32_2l, f)
 
-    # print("cnn32_2l finished")
-    # write_result(prefix + "cnn32_2l_kappa_best.txt", cnn32_2l_kappa)
-    # write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
-    # write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
-    # write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
-    # write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
-    # write_json(prefix + "cnn32_2l_kappa_best.json", cnn32_2l_kappa)
-    # write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
-    # write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
-    # write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
+    print("cnn32_2l finished")
+    write_result(prefix + "cnn32_2l_kappa_best_smac.txt", cnn32_2l_kappa)
+    write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
+    write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
+    write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
+    write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
+    write_json(prefix + "cnn32_2l_kappa_best.json", cnn32_2l_kappa)
+    write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
+    write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
+    write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
 
 
 def run_cnn32_5l():
@@ -993,305 +987,310 @@ def run_cnn32_5l():
     storage_dict = {}
 
 
-    # Grid search for best hyperparameters
+    # # Grid search for best hyperparameters
 
-    cnn32_5l = SimpleCNN32Filter5Layers(num_classes=18)
+    # cnn32_5l = SimpleCNN32Filter5Layers(num_classes=18)
 
-    class CNN32Wrapper(BaseEstimator):
-        def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = cnn32_5l.to(self.device)
-            self.lr = lr
-            self.batch_size = batch_size
-            self.epochs = epochs
-            self.criterion = criterion
-            self.optimizer_name = optimizer_name
-            self.Valid_X = Valid_X
-            self.Valid_y = Valid_y
-            self.trial_start_time = time.perf_counter()
-            self.trial_end_time = None
+    # class CNN32Wrapper(BaseEstimator):
+    #     def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
+    #         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #         self.model = cnn32_5l.to(self.device)
+    #         self.lr = lr
+    #         self.batch_size = batch_size
+    #         self.epochs = epochs
+    #         self.criterion = criterion
+    #         self.optimizer_name = optimizer_name
+    #         self.Valid_X = Valid_X
+    #         self.Valid_y = Valid_y
+    #         self.trial_start_time = time.perf_counter()
+    #         self.trial_end_time = None
 
-            if optimizer_name == 'sgd':
-                self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
-            elif optimizer_name == 'adam':
-                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-            else:
-                raise ValueError(f"Unknown optimizer: {optimizer_name}")
+    #         if optimizer_name == 'sgd':
+    #             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
+    #         elif optimizer_name == 'adam':
+    #             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+    #         else:
+    #             raise ValueError(f"Unknown optimizer: {optimizer_name}")
 
-        def fit(self, X, y):
-            max_epochs = [0]
-            X = X.reshape(-1, 1, 32, 32)
-            self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
-            model = self.model
-            criterion = self.criterion
-            optimizer = self.optimizer
-            prev_loss = float("inf")
-            flag = 0
-            for epoch in range(self.epochs):
-                model.train()
-                for i in range(0, len(X), self.batch_size):
-                    inputs = X[i : i + self.batch_size].to(self.device)
-                    labels = y[i : i + self.batch_size].to(self.device)
-                    optimizer.zero_grad()
-                    if inputs.shape[0] <= 2:
-                        continue
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-                    loss.backward()
-                    optimizer.step()
+    #     def fit(self, X, y):
+    #         max_epochs = [0]
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         criterion = self.criterion
+    #         optimizer = self.optimizer
+    #         prev_loss = float("inf")
+    #         flag = 0
+    #         for epoch in range(self.epochs):
+    #             model.train()
+    #             for i in range(0, len(X), self.batch_size):
+    #                 inputs = X[i : i + self.batch_size].to(self.device)
+    #                 labels = y[i : i + self.batch_size].to(self.device)
+    #                 optimizer.zero_grad()
+    #                 if inputs.shape[0] <= 2:
+    #                     continue
+    #                 outputs = model(inputs)
+    #                 loss = criterion(outputs, labels)
+    #                 loss.backward()
+    #                 optimizer.step()
 
-                model.eval()
-                cur_loss = 0
-                with torch.no_grad():
-                    for i in range(0, len(self.Valid_X), self.batch_size):
-                        # get the inputs
-                        inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
-                        labels = self.Valid_y[i : i + self.batch_size].to(self.device)
-                        if inputs.shape[0] == 1:
-                            inputs = torch.cat((inputs, inputs, inputs), dim = 0)
-                            labels = torch.cat((labels, labels, labels), dim = 0)
+    #             model.eval()
+    #             cur_loss = 0
+    #             with torch.no_grad():
+    #                 for i in range(0, len(self.Valid_X), self.batch_size):
+    #                     # get the inputs
+    #                     inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
+    #                     labels = self.Valid_y[i : i + self.batch_size].to(self.device)
+    #                     if inputs.shape[0] == 1:
+    #                         inputs = torch.cat((inputs, inputs, inputs), dim = 0)
+    #                         labels = torch.cat((labels, labels, labels), dim = 0)
 
-                        # forward
-                        outputs = model(inputs)
-                        loss = criterion(outputs, labels)
-                        cur_loss += loss
-                # early stop if 3 epochs in a row no loss decrease
-                if cur_loss < prev_loss:
-                    prev_loss = cur_loss
-                    flag = 0
-                else:
-                    flag += 1
-                    if flag >= 3:
-                        max_epochs.append(epoch)
-                        break
-            return self
+    #                     # forward
+    #                     outputs = model(inputs)
+    #                     loss = criterion(outputs, labels)
+    #                     cur_loss += loss
+    #             # early stop if 3 epochs in a row no loss decrease
+    #             if cur_loss < prev_loss:
+    #                 prev_loss = cur_loss
+    #                 flag = 0
+    #             else:
+    #                 flag += 1
+    #                 if flag >= 3:
+    #                     max_epochs.append(epoch)
+    #                     break
+    #         return self
         
-        def predict(self, X):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            test_preds = []
-            with torch.no_grad():
-                inputs = X.to(self.device)
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                # predicted = predicted.unsqueeze(0)
-                # test_preds = np.concatenate((test_preds, predicted.tolist()))
-                return predicted.cpu().numpy()
+    #     def predict(self, X):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         test_preds = []
+    #         with torch.no_grad():
+    #             inputs = X.to(self.device)
+    #             outputs = model(inputs)
+    #             _, predicted = torch.max(outputs.data, 1)
+    #             # predicted = predicted.unsqueeze(0)
+    #             # test_preds = np.concatenate((test_preds, predicted.tolist()))
+    #             return predicted.cpu().numpy()
             
-        def predict_proba(self, X):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            test_probs = []
-            with torch.no_grad():
-                outputs = model(X.to(self.device))
-                test_prob = nn.Softmax(dim=1)(outputs)
-                test_probs = test_prob.cpu().numpy()
-                return test_probs
+    #     def predict_proba(self, X):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         test_probs = []
+    #         with torch.no_grad():
+    #             outputs = model(X.to(self.device))
+    #             test_prob = nn.Softmax(dim=1)(outputs)
+    #             test_probs = test_prob.cpu().numpy()
+    #             return test_probs
 
-        def score(self, X, y):
-            X = X.reshape(-1, 1, 32, 32)
-            model = self.model
-            model.eval()
-            predictions = self.predict(X)
-            acc = accuracy_score(y, predictions)
-            self.trial_end_time = time.perf_counter()
-            valid_pred = self.predict(self.Valid_X)
-            valid_acc = accuracy_score(self.Valid_y, valid_pred)
-            valid_probs = self.predict_proba(self.Valid_X)
-            valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
-            valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
-            with open('CNN32_5l_BO_results_2h.txt', 'a') as f:
-                f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
+    #     def score(self, X, y):
+    #         X = X.reshape(-1, 1, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         predictions = self.predict(X)
+    #         acc = accuracy_score(y, predictions)
+    #         self.trial_end_time = time.perf_counter()
+    #         valid_pred = self.predict(self.Valid_X)
+    #         valid_acc = accuracy_score(self.Valid_y, valid_pred)
+    #         valid_probs = self.predict_proba(self.Valid_X)
+    #         valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
+    #         valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
+    #         with open('CNN32_5l_BO_results_2h.txt', 'a') as f:
+    #             f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
 
-            return acc
+    #         return acc
 
-    # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
-    scaler = StandardScaler()
-    train_images = scaler.fit_transform(fsdk18_train_images)
-    valid_images = scaler.transform(fsdk18_valid_images)
+    # # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
+    # scaler = StandardScaler()
+    # train_images = scaler.fit_transform(fsdk18_train_images)
+    # valid_images = scaler.transform(fsdk18_valid_images)
     
-    train_images = torch.FloatTensor(train_images).unsqueeze(1)
-    train_labels = torch.LongTensor(fsdk18_train_labels)
-    valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
-    valid_labels = torch.LongTensor(fsdk18_valid_labels)
+    # train_images = torch.FloatTensor(train_images).unsqueeze(1)
+    # train_labels = torch.LongTensor(fsdk18_train_labels)
+    # valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
+    # valid_labels = torch.LongTensor(fsdk18_valid_labels)
 
-    # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
+    # # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
 
-    # Bayesian optimization for best hyperparameters
-    time_limit = 7200 # 2 hours  
-    deadline_stopper = DeadlineStopper(time_limit)
-    param_space={
-        "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-        "lr": (0.001, 0.1),
-        "epochs": (40, 120),
-        "optimizer_name": ["adam", "sgd"],
-        }
+    # # Bayesian optimization for best hyperparameters
+    # time_limit = 7200 # 2 hours  
+    # deadline_stopper = DeadlineStopper(time_limit)
+    # param_space={
+    #     "batch_size": (32, 2048),
+    #     "lr": (0.001, 0.1),
+    #     "epochs": (30, 180),
+    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
+    #     "optimizer_name": ["adam", "sgd"],
+    #     }
 
-    Bayes = BayesSearchCV(
-        estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-        search_spaces=param_space,
-        n_iter=50,
-        cv=3,
-        verbose=1,
-        n_jobs=-1,
-    )
+    # Bayes = BayesSearchCV(
+    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
+    #     search_spaces=param_space,
+    #     n_iter=50,
+    #     cv=3,
+    #     verbose=1,
+    #     n_jobs=-1,
+    # )
 
-    with open('CNN32_5l_BO_results_2h.txt', 'w') as f:
-        f.write("CNN32_5l_BO_results_2h Results each epochs: \n")
+    # with open('CNN32_5l_BO_results_2h.txt', 'w') as f:
+    #     pass
 
-    start_time = time.perf_counter()
-    Bayes.fit(train_images, train_labels, callback=deadline_stopper)
-    end_time = time.perf_counter()
+    # start_time = time.perf_counter()
+    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
+    # end_time = time.perf_counter()
 
-    iteration_times = deadline_stopper.iter_time
-    search_time = end_time - start_time
-    results = Bayes.cv_results_
-    results_df = pd.DataFrame(results)
+    # iteration_times = deadline_stopper.iter_time
+    # search_time = end_time - start_time
+    # results = Bayes.cv_results_
+    # results_df = pd.DataFrame(results)
 
-    best_params = Bayes.best_params_
-    print("Best Accuracy:", Bayes.best_score_)
-    print("Best Parameters:", best_params)
-    print("Bayesian Search Time:", search_time)
+    # best_params = Bayes.best_params_
+    # print("Best Accuracy:", Bayes.best_score_)
+    # print("Best Parameters:", best_params)
+    # print("Bayesian Search Time:", search_time)
 
-    accuracy, kappa, ece, Time = [], [], [], []
+    # accuracy, kappa, ece, Time = [], [], [], []
 
-    newresults = []
-    with open('CNN32_5l_BO_results_2h.txt', 'r') as f:
-        data = f.readlines()
-        linect = 0
-        for line in data:
-            if "Time:" in line:
-                index = line.find("Time:")
+    # newresults = []
+    # with open('CNN32_5l_BO_results_2h.txt', 'r') as f:
+    #     data = f.readlines()
+    #     linect = 0
+    #     for line in data:
+    #         if "Time:" in line:
+    #             index = line.find("Time:")
 
-                i = linect // 3 #+ linect % 3
+    #             i = linect // 3 #+ linect % 3
 
-                newtime = iteration_times[i]/3
-                linect += 1
+    #             newtime = iteration_times[i]/3
+    #             linect += 1
                 
-                newline = line[:index + len("Time: ")] + str(newtime) + "\n"
-                newresults.append(newline)
-            else:
-                newresults.append(line)
+    #             newline = line[:index + len("Time: ")] + str(newtime) + "\n"
+    #             newresults.append(newline)
+    #         else:
+    #             newresults.append(line)
 
-    with open('CNN32_5l_BO_results_2h.txt', 'w') as f:
-        f.writelines(newresults)
+    # with open('CNN32_5l_BO_results_2h.txt', 'w') as f:
+    #     f.writelines(newresults)
 
-    with open('CNN32_5l_BO_results_2h.txt', 'r') as f:
-        data = f.readlines()
+    # with open('CNN32_5l_BO_results_2h.txt', 'r') as f:
+    #     data = f.readlines()
 
-    for line in data:
-        if "Time: " in line:
-            numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
-            if numbers:
-                accuracy.append(float(numbers[0]))
-                kappa.append(float(numbers[1]))
-                ece.append(float(numbers[2]))
-                Time.append(float(numbers[3]))
+    # for line in data:
+    #     if "Time: " in line:
+    #         numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
+    #         if numbers:
+    #             accuracy.append(float(numbers[0]))
+    #             kappa.append(float(numbers[1]))
+    #             ece.append(float(numbers[2]))
+    #             Time.append(float(numbers[3]))
 
-    print("sum time:", np.sum(iteration_times))
-
-
+    # print("sum time:", np.sum(iteration_times))
 
 
-    # for classes in classes_space:
-    #     d1 = {}
 
-    #     # cohen_kappa vs num training samples (cnn32_5l)
-    #     for samples in samples_space:
-    #         l3 = []
-    #         # train data
-    #         cnn32_5l = SimpleCNN32Filter5Layers(len(classes))
-    #         # 3000 samples, 80% train is 2400 samples, 20% test
-    #         train_images = trainx.copy()
-    #         train_labels = trainy.copy()
-    #         # reshape in 4d array
-    #         test_images = testx.copy()
-    #         test_labels = testy.copy()
 
-    #         (
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #         ) = prepare_data(
-    #             train_images, train_labels, test_images, test_labels, samples, classes
-    #         )
+    for classes in classes_space:
+        d1 = {}
 
-    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-    #             cnn32_5l,
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #             optimizer_name="sgd",
-    #             lr=0.001,
-    #             epochs=80,
-    #             batch=32,
-    #         )
-    #         cnn32_5l_kappa.append(cohen_kappa)
-    #         cnn32_5l_ece.append(ece)
-    #         cnn32_5l_train_time.append(train_time)
-    #         cnn32_5l_test_time.append(test_time)
+        # cohen_kappa vs num training samples (cnn32_5l)
+        for samples in samples_space:
+            l3 = []
+            # train data
+            cnn32_5l = SimpleCNN32Filter5Layers(len(classes))
+            # 3000 samples, 80% train is 2400 samples, 20% test
+            train_images = trainx.copy()
+            train_labels = trainy.copy()
+            # reshape in 4d array
+            test_images = testx.copy()
+            test_labels = testy.copy()
 
-    #         actual_test_labels = []
-    #         for i in range(len(test_labels)):
-    #             actual_test_labels.append(int(classes[test_labels[i]]))
+            (
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+            ) = prepare_data(
+                train_images, train_labels, test_images, test_labels, samples, classes
+            )
 
-    #         sorted_classes = sorted(classes)
-    #         cnn32_5l_probs_labels.append("Classes:" + str(classes))
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+                cnn32_5l,
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+                optimizer_name="sgd",
+                lr=0.001,
+                epochs=100,
+                batch=227,
+                dampening=0.8295654584238159,
+                momentum=0.9666948703632617,
 
-    #         cnn32_5l_probs_labels.append("Sample size:" + str(samples))
+                weight_decay=0.002546558192892438,
+            )
+            cnn32_5l_kappa.append(cohen_kappa)
+            cnn32_5l_ece.append(ece)
+            cnn32_5l_train_time.append(train_time)
+            cnn32_5l_test_time.append(test_time)
 
-    #         actual_preds = []
-    #         for i in range(len(test_preds)):
-    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
 
-    #         for i in range(len(test_probs)):
-    #             cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-    #         cnn32_5l_probs_labels.append(" \n")
+            sorted_classes = sorted(classes)
+            cnn32_5l_probs_labels.append("Classes:" + str(classes))
 
-    #         for i in range(len(test_probs)):
-    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+            cnn32_5l_probs_labels.append("Sample size:" + str(samples))
 
-    #         d1[samples] = l3
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
-    #     storage_dict[tuple(sorted(classes))] = d1
+            for i in range(len(test_probs)):
+                cnn32_5l_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+            cnn32_5l_probs_labels.append(" \n")
 
-    # # switch the classes and sample sizes
-    # switched_storage_dict = {}
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
 
-    # for classes, class_data in storage_dict.items():
-    #     for samples, data in class_data.items():
+            d1[samples] = l3
 
-    #         if samples not in switched_storage_dict:
-    #             switched_storage_dict[samples] = {}
+        storage_dict[tuple(sorted(classes))] = d1
 
-    #         if classes not in switched_storage_dict[samples]:
-    #             switched_storage_dict[samples][classes] = data
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
 
-    # with open(prefix + 'cnn32_5l_switched_storage_dict.pkl', 'wb') as f:
-    #     pickle.dump(switched_storage_dict, f)
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
 
-    # # save the model
-    # with open(prefix + 'cnn32_5l.pkl', 'wb') as f:
-    #     pickle.dump(cnn32_5l, f)
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
 
-    # print("cnn32_5l finished")
-    # write_result(prefix + "cnn32_5l_kappa_best.txt", cnn32_5l_kappa)
-    # write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
-    # write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
-    # write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
-    # write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
-    # write_json(prefix + "cnn32_5l_kappa.json", cnn32_5l_kappa)
-    # write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
-    # write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
-    # write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
+
+    with open(prefix + 'cnn32_5l_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
+
+    # save the model
+    with open(prefix + 'cnn32_5l.pkl', 'wb') as f:
+        pickle.dump(cnn32_5l, f)
+
+    print("cnn32_5l finished")
+    write_result(prefix + "cnn32_5l_kappa_best_smac.txt", cnn32_5l_kappa)
+    write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
+    write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
+    write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
+    write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
+    write_json(prefix + "cnn32_5l_kappa.json", cnn32_5l_kappa)
+    write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
+    write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
+    write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
 
 def train_resnet_wrapper(config, budget, X_train, y_train, X_valid, y_valid):
     """
@@ -1333,157 +1332,148 @@ def run_resnet18():
 
 
 
-    # Grid search for best hyperparameters
+    # # Grid search for best hyperparameters
 
-    resnet = models.resnet18(pretrained=True)
+    # resnet = models.resnet18(pretrained=True)
 
-    num_ftrs = resnet.fc.in_features
-    resnet.fc = nn.Linear(num_ftrs, 18)
+    # num_ftrs = resnet.fc.in_features
+    # resnet.fc = nn.Linear(num_ftrs, 18)
 
-    class ResnetWrapper(BaseEstimator):
-        def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = resnet.to(self.device)
-            self.lr = lr
-            self.batch_size = batch_size
-            self.epochs = epochs
-            self.criterion = criterion
-            self.optimizer_name = optimizer_name
-            self.Valid_X = Valid_X
-            self.Valid_y = Valid_y
-            # self.momentum = momentum
-            # self.weight_decay = weight_decay
+    # class ResnetWrapper(BaseEstimator):
+    #     def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
+    #         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #         self.model = resnet.to(self.device)
+    #         self.lr = lr
+    #         self.batch_size = batch_size
+    #         self.epochs = epochs
+    #         self.criterion = criterion
+    #         self.optimizer_name = optimizer_name
+    #         self.Valid_X = Valid_X
+    #         self.Valid_y = Valid_y
+    #         # self.momentum = momentum
+    #         # self.weight_decay = weight_decay
 
-            if optimizer_name == 'sgd':
-                self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
-            elif optimizer_name == 'adam':
-                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-            else:
-                raise ValueError(f"Unknown optimizer: {optimizer_name}")
+    #         if optimizer_name == 'sgd':
+    #             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
+    #         elif optimizer_name == 'adam':
+    #             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+    #         else:
+    #             raise ValueError(f"Unknown optimizer: {optimizer_name}")
 
-        def fit(self, X, y):
-            max_epochs = [0]
-            X = X.reshape(-1, 3, 32, 32)
-            self.Valid_X = self.Valid_X.reshape(-1, 3, 32, 32)
-            model = self.model
-            criterion = self.criterion
-            optimizer = self.optimizer
-            prev_loss = float("inf")
-            flag = 0
-            for epoch in range(self.epochs):
-                model.train()
-                for i in range(0, len(X), self.batch_size):
-                    inputs = X[i : i + self.batch_size].to(self.device)
-                    labels = y[i : i + self.batch_size].to(self.device)
-                    optimizer.zero_grad()
-                    if inputs.shape[0] <= 2:
-                        continue
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-                    loss.backward()
-                    optimizer.step()
+    #     def fit(self, X, y):
+    #         max_epochs = [0]
+    #         X = X.reshape(-1, 3, 32, 32)
+    #         self.Valid_X = self.Valid_X.reshape(-1, 3, 32, 32)
+    #         model = self.model
+    #         criterion = self.criterion
+    #         optimizer = self.optimizer
+    #         prev_loss = float("inf")
+    #         flag = 0
+    #         for epoch in range(self.epochs):
+    #             model.train()
+    #             for i in range(0, len(X), self.batch_size):
+    #                 inputs = X[i : i + self.batch_size].to(self.device)
+    #                 labels = y[i : i + self.batch_size].to(self.device)
+    #                 optimizer.zero_grad()
+    #                 if inputs.shape[0] <= 2:
+    #                     continue
+    #                 outputs = model(inputs)
+    #                 loss = criterion(outputs, labels)
+    #                 loss.backward()
+    #                 optimizer.step()
 
-                model.eval()
-                cur_loss = 0
-                with torch.no_grad():
-                    for i in range(0, len(self.Valid_X), self.batch_size):
-                        # get the inputs
-                        inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
-                        labels = self.Valid_y[i : i + self.batch_size].to(self.device)
-                        if inputs.shape[0] == 1:
-                            inputs = torch.cat((inputs, inputs, inputs), dim = 0)
-                            labels = torch.cat((labels, labels, labels), dim = 0)
+    #             model.eval()
+    #             cur_loss = 0
+    #             with torch.no_grad():
+    #                 for i in range(0, len(self.Valid_X), self.batch_size):
+    #                     # get the inputs
+    #                     inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
+    #                     labels = self.Valid_y[i : i + self.batch_size].to(self.device)
+    #                     if inputs.shape[0] == 1:
+    #                         inputs = torch.cat((inputs, inputs, inputs), dim = 0)
+    #                         labels = torch.cat((labels, labels, labels), dim = 0)
 
-                        # forward
-                        outputs = model(inputs)
-                        loss = criterion(outputs, labels)
-                        cur_loss += loss
-                # early stop if 3 epochs in a row no loss decrease
-                if cur_loss < prev_loss:
-                    prev_loss = cur_loss
-                    flag = 0
-                else:
-                    flag += 1
-                    if flag >= 3:
-                        max_epochs.append(epoch)
-                        break
-                    else:
-                        max_epochs.append(self.epochs)
-            # print(np.max(max_epochs))
-            return self
+    #                     # forward
+    #                     outputs = model(inputs)
+    #                     loss = criterion(outputs, labels)
+    #                     cur_loss += loss
+    #             # early stop if 3 epochs in a row no loss decrease
+    #             if cur_loss < prev_loss:
+    #                 prev_loss = cur_loss
+    #                 flag = 0
+    #             else:
+    #                 flag += 1
+    #                 if flag >= 3:
+    #                     max_epochs.append(epoch)
+    #                     break
+    #                 else:
+    #                     max_epochs.append(self.epochs)
+    #         # print(np.max(max_epochs))
+    #         return self
         
-        def predict(self, X):
-            X = X.reshape(-1, 3, 32, 32)
-            model = self.model
-            model.eval()
-            with torch.no_grad():
-                outputs = model(X.to(self.device))
-                _, predicted = torch.max(outputs.data, 1)
-                return predicted.cpu()
+    #     def predict(self, X):
+    #         X = X.reshape(-1, 3, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         with torch.no_grad():
+    #             outputs = model(X.to(self.device))
+    #             _, predicted = torch.max(outputs.data, 1)
+    #             return predicted.cpu()
 
-        def score(self, X, y):
-            X = X.reshape(-1, 3, 32, 32)
-            model = self.model
-            model.eval()
-            predictions = self.predict(X)
-            acc = accuracy_score(y, predictions)
-            return acc
+    #     def score(self, X, y):
+    #         X = X.reshape(-1, 3, 32, 32)
+    #         model = self.model
+    #         model.eval()
+    #         predictions = self.predict(X)
+    #         acc = accuracy_score(y, predictions)
+    #         return acc
 
-    # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
-    scaler = StandardScaler()
-    train_images = scaler.fit_transform(fsdk18_train_images)
-    valid_images = scaler.transform(fsdk18_valid_images)
+    # # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
+    # scaler = StandardScaler()
+    # train_images = scaler.fit_transform(fsdk18_train_images)
+    # valid_images = scaler.transform(fsdk18_valid_images)
     
-    train_images = torch.FloatTensor(train_images).unsqueeze(1)
-    train_labels = torch.LongTensor(fsdk18_train_labels)
-    valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
-    valid_labels = torch.LongTensor(fsdk18_valid_labels)
+    # train_images = torch.FloatTensor(train_images).unsqueeze(1)
+    # train_labels = torch.LongTensor(fsdk18_train_labels)
+    # valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
+    # valid_labels = torch.LongTensor(fsdk18_valid_labels)
 
-    train_images = torch.cat((train_images, train_images, train_images), dim=1)
-    valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
+    # train_images = torch.cat((train_images, train_images, train_images), dim=1)
+    # valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
 
+    # # Bayesian optimization for best hyperparameters
+    # time_limit = 7200 # 2 hours  
+    # deadline_stopper = DeadlineStopper(time_limit)
+    # start_time = time.perf_counter()
+    # param_space={
+    #     "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
+    #     "lr": [0.001, 0.01, 0.1],
+    #     "epochs": list(range(60, 121, 10)),
+    #     # "momentum": [0.7, 0.8, 0.9, 0.95, 0.99],
+    #     # "weight_decay": [1e-4, 1e-5, 1e-6],
+    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
+    #     "optimizer_name": ["adam", "sgd"],
+    #     }
 
-    fit_model = run_BOAH(ResnetWrapper,
-        fsdk18_train_images,
-        fsdk18_train_labels,
-        fsdk18_valid_images,
-        fsdk18_valid_labels)
-    print(fit_model)
-    quit(0)
+    # Bayes = BayesSearchCV(
+    #     estimator=ResnetWrapper(Valid_X=valid_images, Valid_y=valid_labels),
+    #     search_spaces=param_space,
+    #     n_iter=50,
+    #     cv=3,
+    #     verbose=1,
+    #     n_jobs=-1,
+    # )
 
-    # Bayesian optimization for best hyperparameters
-    time_limit = 7200 # 2 hours  
-    deadline_stopper = DeadlineStopper(time_limit)
-    start_time = time.perf_counter()
-    param_space={
-        "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-        "lr": [0.001, 0.01, 0.1],
-        "epochs": list(range(60, 121, 10)),
-        # "momentum": [0.7, 0.8, 0.9, 0.95, 0.99],
-        # "weight_decay": [1e-4, 1e-5, 1e-6],
-        # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-        "optimizer_name": ["adam", "sgd"],
-        }
+    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
 
-    Bayes = BayesSearchCV(
-        estimator=ResnetWrapper(Valid_X=valid_images, Valid_y=valid_labels),
-        search_spaces=param_space,
-        n_iter=50,
-        cv=3,
-        verbose=1,
-        n_jobs=-1,
-    )
-
-    Bayes.fit(train_images, train_labels, callback=deadline_stopper)
-
-    best_params = Bayes.best_params_
-    end_time = time.perf_counter()
-    search_time = end_time - start_time
-    print("Best Accuracy:", Bayes.best_score_)
-    print("Best Parameters:", best_params)
-    print("Bayesian Search Time:", search_time)
-    with open("Bayesian Search time res.txt", "w") as f:
-        f.write(str(search_time)) 
+    # best_params = Bayes.best_params_
+    # end_time = time.perf_counter()
+    # search_time = end_time - start_time
+    # print("Best Accuracy:", Bayes.best_score_)
+    # print("Best Parameters:", best_params)
+    # print("Bayesian Search Time:", search_time)
+    # with open("Bayesian Search time res.txt", "w") as f:
+    #     f.write(str(search_time)) 
 
 
     ### Best set of hyperparameters for 3 classes:L
@@ -1495,111 +1485,111 @@ def run_resnet18():
 
 
 
-    # for classes in classes_space:
-    #     d1 = {}
+    for classes in classes_space:
+        d1 = {}
 
-    #     # cohen_kappa vs num training samples (resnet18)
-    #     for samples in samples_space:
-    #         l3 = []
-    #         resnet = models.resnet18(pretrained=True)
+        # cohen_kappa vs num training samples (resnet18)
+        for samples in samples_space:
+            l3 = []
+            resnet = models.resnet18(pretrained=True)
 
-    #         num_ftrs = resnet.fc.in_features
-    #         resnet.fc = nn.Linear(num_ftrs, len(classes))
-    #         # train data
-    #         # 3000 samples, 80% train is 2400 samples, 20% test
-    #         train_images = trainx.copy()
-    #         train_labels = trainy.copy()
-    #         # reshape in 4d array
-    #         test_images = testx.copy()
-    #         test_labels = testy.copy()
+            num_ftrs = resnet.fc.in_features
+            resnet.fc = nn.Linear(num_ftrs, len(classes))
+            # train data
+            # 3000 samples, 80% train is 2400 samples, 20% test
+            train_images = trainx.copy()
+            train_labels = trainy.copy()
+            # reshape in 4d array
+            test_images = testx.copy()
+            test_labels = testy.copy()
 
-    #         (
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #         ) = prepare_data(
-    #             train_images, train_labels, test_images, test_labels, samples, classes
-    #         )
+            (
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+            ) = prepare_data(
+                train_images, train_labels, test_images, test_labels, samples, classes
+            )
 
-    #         # need to duplicate channel because batch norm cant have 1 channel images
-    #         train_images = torch.cat((train_images, train_images, train_images), dim=1)
-    #         valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
-    #         test_images = torch.cat((test_images, test_images, test_images), dim=1)
+            # need to duplicate channel because batch norm cant have 1 channel images
+            train_images = torch.cat((train_images, train_images, train_images), dim=1)
+            valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
+            test_images = torch.cat((test_images, test_images, test_images), dim=1)
 
-    #         cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
-    #             resnet,
-    #             train_images,
-    #             train_labels,
-    #             valid_images,
-    #             valid_labels,
-    #             test_images,
-    #             test_labels,
-    #             epochs=100,
-    #             lr=0.001,
-    #             batch=32,
-    #             optimizer_name="sgd",
-    #         )
-    #         resnet18_kappa.append(cohen_kappa)
-    #         resnet18_ece.append(ece)
-    #         resnet18_train_time.append(train_time)
-    #         resnet18_test_time.append(test_time)
+            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+                resnet,
+                train_images,
+                train_labels,
+                valid_images,
+                valid_labels,
+                test_images,
+                test_labels,
+                epochs=87,
+                lr=0.001,
+                batch=32,
+                optimizer_name="adam",
+            )
+            resnet18_kappa.append(cohen_kappa)
+            resnet18_ece.append(ece)
+            resnet18_train_time.append(train_time)
+            resnet18_test_time.append(test_time)
 
-    #         actual_test_labels = []
-    #         for i in range(len(test_labels)):
-    #             actual_test_labels.append(int(classes[test_labels[i]]))
+            actual_test_labels = []
+            for i in range(len(test_labels)):
+                actual_test_labels.append(int(classes[test_labels[i]]))
 
-    #         sorted_classes = sorted(classes)
-    #         resnet18_probs_labels.append("Classes:" + str(classes))
+            sorted_classes = sorted(classes)
+            resnet18_probs_labels.append("Classes:" + str(classes))
 
-    #         resnet18_probs_labels.append("Sample size:" + str(samples))
+            resnet18_probs_labels.append("Sample size:" + str(samples))
 
-    #         actual_preds = []
-    #         for i in range(len(test_preds)):
-    #             actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
+            actual_preds = []
+            for i in range(len(test_preds)):
+                actual_preds.append(int(sorted_classes[test_preds[i].astype(int)]))
 
-    #         for i in range(len(test_probs)):
-    #             resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
-    #         resnet18_probs_labels.append(" \n")
+            for i in range(len(test_probs)):
+                resnet18_probs_labels.append("Posteriors:"+str(test_probs[i]) + ", " + "Test Labels:" + str(actual_test_labels[i]))
+            resnet18_probs_labels.append(" \n")
 
-    #         for i in range(len(test_probs)):
-    #             l3.append([test_probs[i].tolist(), actual_test_labels[i]])
+            for i in range(len(test_probs)):
+                l3.append([test_probs[i].tolist(), actual_test_labels[i]])
         
-    #         d1[samples] = l3
-    #     storage_dict[tuple(sorted(classes))] = d1
+            d1[samples] = l3
+        storage_dict[tuple(sorted(classes))] = d1
 
-    # # switch the classes and sample sizes
-    # switched_storage_dict = {}
+    # switch the classes and sample sizes
+    switched_storage_dict = {}
 
-    # for classes, class_data in storage_dict.items():
-    #     for samples, data in class_data.items():
+    for classes, class_data in storage_dict.items():
+        for samples, data in class_data.items():
 
-    #         if samples not in switched_storage_dict:
-    #             switched_storage_dict[samples] = {}
+            if samples not in switched_storage_dict:
+                switched_storage_dict[samples] = {}
 
-    #         if classes not in switched_storage_dict[samples]:
-    #             switched_storage_dict[samples][classes] = data
+            if classes not in switched_storage_dict[samples]:
+                switched_storage_dict[samples][classes] = data
 
-    # with open(prefix + 'resnet18_switched_storage_dict.pkl', 'wb') as f:
-    #     pickle.dump(switched_storage_dict, f)
+    with open(prefix + 'resnet18_switched_storage_dict.pkl', 'wb') as f:
+        pickle.dump(switched_storage_dict, f)
 
-    # # save the model
-    # with open(prefix + 'resnet18.pkl', 'wb') as f:
-    #     pickle.dump(resnet, f)
+    # save the model
+    with open(prefix + 'resnet18.pkl', 'wb') as f:
+        pickle.dump(resnet, f)
 
 
-    # print("resnet18 finished")
-    # write_result(prefix + "resnet18_kappa_best.txt", resnet18_kappa)
-    # write_result(prefix + "resnet18_ece.txt", resnet18_ece)
-    # write_result(prefix + "resnet18_train_time.txt", resnet18_train_time)
-    # write_result(prefix + "resnet18_test_time.txt", resnet18_test_time)
-    # write_result(prefix + "resnet18_probs&labels.txt", resnet18_probs_labels)
-    # write_json(prefix + "resnet18_kappa.json", resnet18_kappa)
-    # write_json(prefix + "resnet18_ece.json", resnet18_ece)
-    # write_json(prefix + "resnet18_train_time.json", resnet18_train_time)
-    # write_json(prefix + "resnet18_test_time.json", resnet18_test_time)
+    print("resnet18 finished")
+    write_result(prefix + "resnet18_kappa_best_smac.txt", resnet18_kappa)
+    write_result(prefix + "resnet18_ece.txt", resnet18_ece)
+    write_result(prefix + "resnet18_train_time.txt", resnet18_train_time)
+    write_result(prefix + "resnet18_test_time.txt", resnet18_test_time)
+    write_result(prefix + "resnet18_probs&labels.txt", resnet18_probs_labels)
+    write_json(prefix + "resnet18_kappa.json", resnet18_kappa)
+    write_json(prefix + "resnet18_ece.json", resnet18_ece)
+    write_json(prefix + "resnet18_train_time.json", resnet18_train_time)
+    write_json(prefix + "resnet18_test_time.json", resnet18_test_time)
 
 
 if __name__ == "__main__":
@@ -1721,11 +1711,11 @@ if __name__ == "__main__":
     # print("Running GBT tuning \n")
     # run_GBT()
 
-    # print("Running RF tuning \n")
-    # run_naive_rf()
+    print("Running RF tuning \n")
+    run_naive_rf()
 
-    print("Running CNN32 tuning \n")
-    run_cnn32()
+    # print("Running CNN32 tuning \n")
+    # run_cnn32()
 
     # print("Running CNN32_2l tuning \n")
     # run_cnn32_2l()
@@ -1736,4 +1726,10 @@ if __name__ == "__main__":
     # print("Running Resnet tuning \n")
     # run_resnet18()
     
+
+
+
+
+
+
 
