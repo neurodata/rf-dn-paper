@@ -237,7 +237,7 @@ def run_naive_rf():
     navie_rf_probs_labels = []
     storage_dict = {}
 
-    # RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+    # RF = RandomForestClassifier(n_jobs=-1, random_state=317)
 
     # ### Bayesian search for best parameters
     # time_limit = 7200 # 2 hours  
@@ -246,10 +246,13 @@ def run_naive_rf():
     # RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
     # param_space = {
-    #     'n_estimators': list(range(400, 1201, 100)), 
-    #     'max_depth': list(range(2, 21, 2)),
-    #     'min_samples_split': list(range(2, 11, 2)),
-    #     'min_samples_leaf': list(range(1, 11, 2)),        
+    #     'n_estimators': list(range(100, 1200)), 
+    #     'max_depth': list(range(2, 41)),
+    #     'min_samples_split': list(range(2, 21)),
+    #     'min_samples_leaf': list(range(1, 21)), 
+    #     'max_features': ['sqrt', 'log2', None],
+    #     'criterion': ['gini', 'entropy', 'log_loss'],
+    #     'max_samples': list(np.arange(0.1, 1.1, 0.1)),      
     # }
 
     # Bayes = BayesSearchCV(
@@ -279,16 +282,16 @@ def run_naive_rf():
             l3 = []            
             # train data
 
-            # RF_best = RandomForestClassifier(n_jobs=-1, random_state=317)
+            RF_best = RandomForestClassifier(n_estimators=871, max_depth=31, min_samples_split=3, min_samples_leaf=3,n_jobs=-1, random_state=317, criterion='entropy', max_features='sqrt', max_samples=0.9521264538500699)
 
             # Best set of hyperparameters of 3 classes: 
-            # RF_best = RandomForestClassifier(n_estimators=600, max_depth=16, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+            # RF_best = RandomForestClassifier(n_estimators=313, max_depth=37, min_samples_split=6, min_samples_leaf=4, max_features=None ,n_jobs=-1, random_state=317, criterion='entropy')
 
             # Best set of hyperparameters of 8 classes: 
             # RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
 
             # Best set of hyperparameters of 15 classes:
-            RF_best = RandomForestClassifier(n_estimators=634, max_depth=35, min_samples_split=6, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
+            # RF_best = RandomForestClassifier(n_estimators=313, max_depth=37, min_samples_split=6, min_samples_leaf=4, max_features=None ,n_jobs=-1, random_state=317, criterion='entropy')
 
             cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
                 RF_best,
@@ -341,7 +344,7 @@ def run_naive_rf():
         pickle.dump(RF_best, f)
 
     print("naive_rf finished")
-    write_result(prefix + "naive_rf_kappa_best_smac.txt", naive_rf_kappa)
+    write_result(prefix + "naive_rf_kappa_best_30min.txt", naive_rf_kappa)
     write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
     write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
     write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
@@ -604,10 +607,10 @@ def run_cnn32():
                 test_images,
                 test_labels,
                 optimizer_name="adam",
-                epochs=63,
-                batch=881,
-                lr=0.0011895644730894593,
-                weight_decay=0.02881406216856244,
+                epochs=37,
+                batch=149,
+                lr=0.0010724461462085723,
+                weight_decay=0.031179832658397792,
             )
             cnn32_kappa.append(cohen_kappa)
             cnn32_ece.append(ece)
@@ -658,7 +661,7 @@ def run_cnn32():
         pickle.dump(cnn32, f)
 
     print("cnn32 finished")
-    write_result(prefix + "cnn32_kappa_best_smac.txt", cnn32_kappa)
+    write_result(prefix + "cnn32_kappa_best_30min.txt", cnn32_kappa)
     write_result(prefix + "cnn32_ece_best.txt", cnn32_ece)
     write_result(prefix + "cnn32_train_time_best.txt", cnn32_train_time)
     write_result(prefix + "cnn32_test_time_best.txt", cnn32_test_time)
@@ -913,10 +916,10 @@ def run_cnn32_2l():
                 test_images,
                 test_labels,
                 optimizer_name="adam",
-                batch=248,
-                epochs=100,
-                lr=0.001936799454289005,
-                weight_decay=0.00010614767181282957,
+                batch=202,
+                epochs=35,
+                lr=0.0077354380203642695,
+                weight_decay=0.0030661314627527156,
             )
             cnn32_2l_kappa.append(cohen_kappa)
             cnn32_2l_ece.append(ece)
@@ -967,7 +970,7 @@ def run_cnn32_2l():
         pickle.dump(cnn32_2l, f)
 
     print("cnn32_2l finished")
-    write_result(prefix + "cnn32_2l_kappa_best_smac.txt", cnn32_2l_kappa)
+    write_result(prefix + "cnn32_2l_kappa_best_30min.txt", cnn32_2l_kappa)
     write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
     write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
     write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
@@ -1225,13 +1228,12 @@ def run_cnn32_5l():
                 test_images,
                 test_labels,
                 optimizer_name="sgd",
-                lr=0.001,
+                lr=0.0010888430371218745,
                 epochs=100,
                 batch=227,
                 dampening=0.8295654584238159,
-                momentum=0.9666948703632617,
-
-                weight_decay=0.002546558192892438,
+                momentum=0.9723197429713939217,
+                weight_decay=0.0011744534251890575,
             )
             cnn32_5l_kappa.append(cohen_kappa)
             cnn32_5l_ece.append(ece)
@@ -1282,7 +1284,7 @@ def run_cnn32_5l():
         pickle.dump(cnn32_5l, f)
 
     print("cnn32_5l finished")
-    write_result(prefix + "cnn32_5l_kappa_best_smac.txt", cnn32_5l_kappa)
+    write_result(prefix + "cnn32_5l_kappa_best_2hr.txt", cnn32_5l_kappa)
     write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
     write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
     write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
@@ -1528,9 +1530,12 @@ def run_resnet18():
                 test_images,
                 test_labels,
                 epochs=87,
-                lr=0.001,
-                batch=32,
+                lr=0.0018371144479809283,
+                batch=44,
                 optimizer_name="adam",
+                # dampening=0.8295654584238159,
+                # momentum=0.9666948703632617,
+                weight_decay=0.00010957477139878025,
             )
             resnet18_kappa.append(cohen_kappa)
             resnet18_ece.append(ece)
@@ -1581,7 +1586,7 @@ def run_resnet18():
 
 
     print("resnet18 finished")
-    write_result(prefix + "resnet18_kappa_best_smac.txt", resnet18_kappa)
+    write_result(prefix + "resnet18_kappa_best_2hr.txt", resnet18_kappa)
     write_result(prefix + "resnet18_ece.txt", resnet18_ece)
     write_result(prefix + "resnet18_train_time.txt", resnet18_train_time)
     write_result(prefix + "resnet18_test_time.txt", resnet18_test_time)
