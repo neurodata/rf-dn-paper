@@ -751,7 +751,7 @@ def run_resnet18():
                 optimizer_name="adam",
                 lr=0.001238643790422043,
                 epochs=88,
-                batch=15,
+                batch=16,
                 dampening=0.6930353552983253,
                 momentum=0.07697221744171885,
                 weight_decay=0.00028275993975422354,
