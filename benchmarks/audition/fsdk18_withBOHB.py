@@ -230,49 +230,13 @@ def target_function_network(target_wrapper, config, seed, budget, train_data, tr
 
 
 def run_naive_rf():
+    naive_rf_acc = []
     naive_rf_kappa = []
     naive_rf_ece = []
     naive_rf_train_time = []
     naive_rf_test_time = []
     navie_rf_probs_labels = []
     storage_dict = {}
-
-    # RF = RandomForestClassifier(n_jobs=-1, random_state=317)
-
-    # ### Bayesian search for best parameters
-    # time_limit = 7200 # 2 hours  
-    # deadline_stopper = DeadlineStopper(time_limit)
-    # start_time = time.perf_counter()
-    # RF = RandomForestClassifier(min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
-
-    # param_space = {
-    #     'n_estimators': list(range(100, 1200)), 
-    #     'max_depth': list(range(2, 41)),
-    #     'min_samples_split': list(range(2, 21)),
-    #     'min_samples_leaf': list(range(1, 21)), 
-    #     'max_features': ['sqrt', 'log2', None],
-    #     'criterion': ['gini', 'entropy', 'log_loss'],
-    #     'max_samples': list(np.arange(0.1, 1.1, 0.1)),      
-    # }
-
-    # Bayes = BayesSearchCV(
-    #     estimator=RF, 
-    #     search_spaces=param_space,
-    #     n_iter=50,  
-    #     cv=3,  
-    #     n_jobs=-1, 
-    #     verbose=1, 
-    # )
-
-    # Bayes.fit(fsdk18_train_images, fsdk18_train_labels, callback=deadline_stopper)
-
-    # best_params = Bayes.best_params_
-    # end_time = time.perf_counter()
-    # search_time = end_time - start_time
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Hyperparameters:", best_params)
-    # print("Bayesian Search time:", search_time)
-
 
 
     for classes in classes_space:
@@ -281,19 +245,9 @@ def run_naive_rf():
         for samples in samples_space:
             l3 = []            
             # train data
+            RF_best = RandomForestClassifier(n_estimators=800, max_depth=25, min_samples_split=3, min_samples_leaf=2,n_jobs=-1, random_state=317, criterion='gini', max_features=None, max_samples=0.9794887332800052)
 
-            RF_best = RandomForestClassifier(n_estimators=871, max_depth=31, min_samples_split=3, min_samples_leaf=3,n_jobs=-1, random_state=317, criterion='entropy', max_features='sqrt', max_samples=0.9521264538500699)
-
-            # Best set of hyperparameters of 3 classes: 
-            # RF_best = RandomForestClassifier(n_estimators=313, max_depth=37, min_samples_split=6, min_samples_leaf=4, max_features=None ,n_jobs=-1, random_state=317, criterion='entropy')
-
-            # Best set of hyperparameters of 8 classes: 
-            # RF_best = RandomForestClassifier(n_estimators=600, max_depth=32, min_samples_split=2, min_samples_leaf=1, max_features=None ,n_jobs=-1, random_state=317)
-
-            # Best set of hyperparameters of 15 classes:
-            # RF_best = RandomForestClassifier(n_estimators=313, max_depth=37, min_samples_split=6, min_samples_leaf=4, max_features=None ,n_jobs=-1, random_state=317, criterion='entropy')
-
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
+            acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
                 RF_best,
                 fsdk18_train_images,
                 fsdk18_train_labels,
@@ -302,6 +256,7 @@ def run_naive_rf():
                 samples,
                 classes,
             )
+            naive_rf_acc.append(acc)
             naive_rf_kappa.append(cohen_kappa)
             naive_rf_ece.append(ece)
             naive_rf_train_time.append(train_time)
@@ -344,224 +299,27 @@ def run_naive_rf():
         pickle.dump(RF_best, f)
 
     print("naive_rf finished")
-    write_result(prefix + "naive_rf_kappa_best_30min.txt", naive_rf_kappa)
-    write_result(prefix + "naive_rf_ece.txt", naive_rf_ece)
-    write_result(prefix + "naive_rf_train_time.txt", naive_rf_train_time)
-    write_result(prefix + "naive_rf_test_time.txt", naive_rf_test_time)
-    write_result(prefix + "naive_rf_probs&labels.txt", navie_rf_probs_labels)
-    write_json(prefix + "naive_rf_kappa_best.json", naive_rf_kappa)
-    write_json(prefix + "naive_rf_ece.json", naive_rf_ece)
-    write_json(prefix + "naive_rf_train_time.json", naive_rf_train_time)
-    write_json(prefix + "naive_rf_test_time.json", naive_rf_test_time)
+    write_result(prefix + "naive_rf_acc_4hr.txt", naive_rf_acc)
+    write_result(prefix + "naive_rf_kappa_4hr.txt", naive_rf_kappa)
+    write_result(prefix + "naive_rf_ece_4hr.txt", naive_rf_ece)
+    write_result(prefix + "naive_rf_train_time_4hr.txt", naive_rf_train_time)
+    write_result(prefix + "naive_rf_test_time_4hr.txt", naive_rf_test_time)
+    write_result(prefix + "naive_rf_probs&labels_4hr.txt", navie_rf_probs_labels)
+    write_json(prefix + "naive_rf_acc_4hr.json", naive_rf_acc)
+    write_json(prefix + "naive_rf_kappa_best_4hr.json", naive_rf_kappa)
+    write_json(prefix + "naive_rf_ece_4hrs.json", naive_rf_ece)
+    write_json(prefix + "naive_rf_train_time_4hr.json", naive_rf_train_time)
+    write_json(prefix + "naive_rf_test_time_4hr.json", naive_rf_test_time)
 
 
 def run_cnn32():
+    cnn32_acc = []
     cnn32_kappa = []
     cnn32_ece = []
     cnn32_train_time = []
     cnn32_test_time = []
     cnn32_probs_labels = []
     storage_dict = {}
-
-    # cnn32 = SimpleCNN32Filter(num_classes=18)
-
-    # class CNN32Wrapper(BaseEstimator):
-    #     def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
-    #         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #         self.model = cnn32.to(self.device)
-    #         self.lr = lr
-    #         self.batch_size = batch_size
-    #         self.epochs = epochs
-    #         self.criterion = criterion
-    #         self.optimizer_name = optimizer_name
-    #         self.Valid_X = Valid_X
-    #         self.Valid_y = Valid_y
-    #         self.trial_start_time = time.perf_counter()
-    #         self.trial_end_time = None
-
-    #         if optimizer_name == 'sgd':
-    #             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
-    #         elif optimizer_name == 'adam':
-    #             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-    #         else:
-    #             raise ValueError(f"Unknown optimizer: {optimizer_name}")
-
-    #     def fit(self, X, y):
-    #         max_epochs = [0]
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         criterion = self.criterion
-    #         optimizer = self.optimizer
-    #         prev_loss = float("inf")
-    #         flag = 0
-    #         for epoch in range(self.epochs):
-    #             model.train()
-    #             for i in range(0, len(X), self.batch_size):
-    #                 inputs = X[i : i + self.batch_size].to(self.device)
-    #                 labels = y[i : i + self.batch_size].to(self.device)
-    #                 optimizer.zero_grad()
-    #                 if inputs.shape[0] <= 2:
-    #                     continue
-    #                 outputs = model(inputs)
-    #                 loss = criterion(outputs, labels)
-    #                 loss.backward()
-    #                 optimizer.step()
-
-    #             model.eval()
-    #             cur_loss = 0
-    #             with torch.no_grad():
-    #                 for i in range(0, len(self.Valid_X), self.batch_size):
-    #                     # get the inputs
-    #                     inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
-    #                     labels = self.Valid_y[i : i + self.batch_size].to(self.device)
-    #                     if inputs.shape[0] == 1:
-    #                         inputs = torch.cat((inputs, inputs, inputs), dim = 0)
-    #                         labels = torch.cat((labels, labels, labels), dim = 0)
-
-    #                     # forward
-    #                     outputs = model(inputs)
-    #                     loss = criterion(outputs, labels)
-    #                     cur_loss += loss
-    #             # early stop if 3 epochs in a row no loss decrease
-    #             if cur_loss < prev_loss:
-    #                 prev_loss = cur_loss
-    #                 flag = 0
-    #             else:
-    #                 flag += 1
-    #                 if flag >= 3:
-    #                     max_epochs.append(epoch)
-    #                     break
-    #         return self
-        
-    #     def predict(self, X):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         test_preds = []
-    #         with torch.no_grad():
-    #             inputs = X.to(self.device)
-    #             outputs = model(inputs)
-    #             _, predicted = torch.max(outputs.data, 1)
-    #             # predicted = predicted.unsqueeze(0)
-    #             # test_preds = np.concatenate((test_preds, predicted.tolist()))
-    #             return predicted.cpu().numpy()
-            
-    #     def predict_proba(self, X):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         test_probs = []
-    #         with torch.no_grad():
-    #             outputs = model(X.to(self.device))
-    #             test_prob = nn.Softmax(dim=1)(outputs)
-    #             test_probs = test_prob.cpu().numpy()
-    #             return test_probs
-
-    #     def score(self, X, y):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         predictions = self.predict(X)
-    #         acc = accuracy_score(y, predictions)
-    #         self.trial_end_time = time.perf_counter()
-    #         valid_pred = self.predict(self.Valid_X)
-    #         valid_acc = accuracy_score(self.Valid_y, valid_pred)
-    #         valid_probs = self.predict_proba(self.Valid_X)
-    #         valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
-    #         valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
-    #         with open('CNN32_BO_results_2h.txt', 'a') as f:
-    #             f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
-
-    #         return acc
-
-    # # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
-    # scaler = StandardScaler()
-    # train_images = scaler.fit_transform(fsdk18_train_images)
-    # valid_images = scaler.transform(fsdk18_valid_images)
-    
-    # train_images = torch.FloatTensor(train_images).unsqueeze(1)
-    # train_labels = torch.LongTensor(fsdk18_train_labels)
-    # valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
-    # valid_labels = torch.LongTensor(fsdk18_valid_labels)
-
-    # # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
-
-    # # Bayesian optimization for best hyperparameters
-    # time_limit = 240 # 2 hours  
-    # deadline_stopper = DeadlineStopper(time_limit)
-    # param_space={
-    #     "batch_size": (32, 2048),
-    #     "lr": (0.001, 0.1),
-    #     "epochs": (30, 180),
-    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-    #     "optimizer_name": ["adam", "sgd"],
-    #     }
-
-    # Bayes = BayesSearchCV(
-    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-    #     search_spaces=param_space,
-    #     n_iter=50,
-    #     cv=3,
-    #     verbose=1,
-    #     n_jobs=-1,
-    # )
-
-    # with open('CNN32_BO_results_2h.txt', 'w') as f:
-    #     pass
-
-    # start_time = time.perf_counter()
-    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
-    # end_time = time.perf_counter()
-
-    # iteration_times = deadline_stopper.iter_time
-    # search_time = end_time - start_time
-    # results = Bayes.cv_results_
-    # results_df = pd.DataFrame(results)
-
-    # best_params = Bayes.best_params_
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Parameters:", best_params)
-    # print("Bayesian Search Time:", search_time)
-
-    # accuracy, kappa, ece, Time = [], [], [], []
-
-    # newresults = []
-    # with open('CNN32_BO_results_2h.txt', 'r') as f:
-    #     data = f.readlines()
-    #     linect = 0
-    #     for line in data:
-    #         if "Time:" in line:
-    #             index = line.find("Time:")
-
-    #             i = linect // 3 #+ linect % 3
-
-    #             newtime = iteration_times[i]/3
-    #             linect += 1
-                
-    #             newline = line[:index + len("Time: ")] + str(newtime) + "\n"
-    #             newresults.append(newline)
-    #         else:
-    #             newresults.append(line)
-
-    # with open('CNN32_BO_results_2h.txt', 'w') as f:
-    #     f.writelines(newresults)
-
-    # with open('CNN32_BO_results_2h.txt', 'r') as f:
-    #     data = f.readlines()
-
-    # for line in data:
-    #     if "Time: " in line:
-    #         numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
-    #         if numbers:
-    #             accuracy.append(float(numbers[0]))
-    #             kappa.append(float(numbers[1]))
-    #             ece.append(float(numbers[2]))
-    #             Time.append(float(numbers[3]))
-
-    # print("sum time:", np.sum(Time)) 
-
-
 
     ### Best set of hyperparameters for 8 classes:
         # optimizer_name="adam",
@@ -598,7 +356,7 @@ def run_cnn32():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+            acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
                 cnn32,
                 train_images,
                 train_labels,
@@ -607,11 +365,12 @@ def run_cnn32():
                 test_images,
                 test_labels,
                 optimizer_name="adam",
-                epochs=37,
-                batch=149,
-                lr=0.0010724461462085723,
-                weight_decay=0.031179832658397792,
+                epochs=120,
+                batch=1011,
+                lr=0.0011693380299297484,
+                weight_decay=0.018985909039225448,
             )
+            cnn32_acc.append(acc)
             cnn32_kappa.append(cohen_kappa)
             cnn32_ece.append(ece)
             cnn32_train_time.append(train_time)
@@ -661,18 +420,21 @@ def run_cnn32():
         pickle.dump(cnn32, f)
 
     print("cnn32 finished")
-    write_result(prefix + "cnn32_kappa_best_30min.txt", cnn32_kappa)
-    write_result(prefix + "cnn32_ece_best.txt", cnn32_ece)
-    write_result(prefix + "cnn32_train_time_best.txt", cnn32_train_time)
-    write_result(prefix + "cnn32_test_time_best.txt", cnn32_test_time)
-    write_result(prefix + "cnn32_probs&labels_best.txt", cnn32_probs_labels)
-    write_json(prefix + "cnn32_kappa_best.json", cnn32_kappa)
-    write_json(prefix + "cnn32_ece_best.json", cnn32_ece)
-    write_json(prefix + "cnn32_train_time_best.json", cnn32_train_time)
-    write_json(prefix + "cnn32_test_time_best.json", cnn32_test_time)
+    write_result(prefix + "cnn32_acc_4hr.txt", cnn32_acc)
+    write_result(prefix + "cnn32_kappa_4hr.txt", cnn32_kappa)
+    write_result(prefix + "cnn32_ece_4hr.txt", cnn32_ece)
+    write_result(prefix + "cnn32_train_time_4hr.txt", cnn32_train_time)
+    write_result(prefix + "cnn32_test_time_4hr.txt", cnn32_test_time)
+    write_result(prefix + "cnn32_probs&labels_4hr.txt", cnn32_probs_labels)
+    write_json(prefix + "cnn32_acc_4hr.json", cnn32_acc)
+    write_json(prefix + "cnn32_kappa_4hr.json", cnn32_kappa)
+    write_json(prefix + "cnn32_ece_4hr.json", cnn32_ece)
+    write_json(prefix + "cnn32_train_time_4hr.json", cnn32_train_time)
+    write_json(prefix + "cnn32_test_time_4hr.json", cnn32_test_time)
 
 
 def run_cnn32_2l():
+    cnn32_2l_acc = []
     cnn32_2l_kappa = []
     cnn32_2l_ece = []
     cnn32_2l_train_time = []
@@ -680,207 +442,7 @@ def run_cnn32_2l():
     cnn32_2l_probs_labels = []
     storage_dict = {}
 
-    # cnn32_2l = SimpleCNN32Filter2Layers(num_classes=18)
-
-    # class CNN32Wrapper(BaseEstimator):
-    #     def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
-    #         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #         self.model = cnn32_2l.to(self.device)
-    #         self.lr = lr
-    #         self.batch_size = batch_size
-    #         self.epochs = epochs
-    #         self.criterion = criterion
-    #         self.optimizer_name = optimizer_name
-    #         self.Valid_X = Valid_X
-    #         self.Valid_y = Valid_y
-    #         self.trial_start_time = time.perf_counter()
-    #         self.trial_end_time = None
-
-    #         if optimizer_name == 'sgd':
-    #             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
-    #         elif optimizer_name == 'adam':
-    #             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-    #         else:
-    #             raise ValueError(f"Unknown optimizer: {optimizer_name}")
-
-    #     def fit(self, X, y):
-    #         max_epochs = [0]
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         criterion = self.criterion
-    #         optimizer = self.optimizer
-    #         prev_loss = float("inf")
-    #         flag = 0
-    #         for epoch in range(self.epochs):
-    #             model.train()
-    #             for i in range(0, len(X), self.batch_size):
-    #                 inputs = X[i : i + self.batch_size].to(self.device)
-    #                 labels = y[i : i + self.batch_size].to(self.device)
-    #                 optimizer.zero_grad()
-    #                 if inputs.shape[0] <= 2:
-    #                     continue
-    #                 outputs = model(inputs)
-    #                 loss = criterion(outputs, labels)
-    #                 loss.backward()
-    #                 optimizer.step()
-
-    #             model.eval()
-    #             cur_loss = 0
-    #             with torch.no_grad():
-    #                 for i in range(0, len(self.Valid_X), self.batch_size):
-    #                     # get the inputs
-    #                     inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
-    #                     labels = self.Valid_y[i : i + self.batch_size].to(self.device)
-    #                     if inputs.shape[0] == 1:
-    #                         inputs = torch.cat((inputs, inputs, inputs), dim = 0)
-    #                         labels = torch.cat((labels, labels, labels), dim = 0)
-
-    #                     # forward
-    #                     outputs = model(inputs)
-    #                     loss = criterion(outputs, labels)
-    #                     cur_loss += loss
-    #             # early stop if 3 epochs in a row no loss decrease
-    #             if cur_loss < prev_loss:
-    #                 prev_loss = cur_loss
-    #                 flag = 0
-    #             else:
-    #                 flag += 1
-    #                 if flag >= 3:
-    #                     max_epochs.append(epoch)
-    #                     break
-    #         return self
-        
-    #     def predict(self, X):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         with torch.no_grad():
-    #             inputs = X.to(self.device)
-    #             outputs = model(inputs)
-    #             _, predicted = torch.max(outputs.data, 1)
-    #             return predicted.cpu().numpy()
-            
-    #     def predict_proba(self, X):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         test_probs = []
-    #         with torch.no_grad():
-    #             outputs = model(X.to(self.device))
-    #             test_prob = nn.Softmax(dim=1)(outputs)
-    #             test_probs = test_prob.cpu().numpy()
-    #             return test_probs
-
-    #     def score(self, X, y):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         predictions = self.predict(X)
-    #         acc = accuracy_score(y, predictions)
-    #         self.trial_end_time = time.perf_counter()
-    #         valid_pred = self.predict(self.Valid_X)
-    #         valid_acc = accuracy_score(self.Valid_y, valid_pred)
-    #         valid_probs = self.predict_proba(self.Valid_X)
-    #         valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
-    #         valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
-    #         with open('CNN32_2l_BO_results_2h.txt', 'a') as f:
-    #             f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
-
-    #         return acc
-
-    # # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
-    # scaler = StandardScaler()
-    # train_images = scaler.fit_transform(fsdk18_train_images)
-    # valid_images = scaler.transform(fsdk18_valid_images)
-    
-    # train_images = torch.FloatTensor(train_images).unsqueeze(1)
-    # train_labels = torch.LongTensor(fsdk18_train_labels)
-    # valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
-    # valid_labels = torch.LongTensor(fsdk18_valid_labels)
-
-    # # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
-
-    # # Bayesian optimization for best hyperparameters
-    # time_limit = 7200 # 2 hours  
-    # deadline_stopper = DeadlineStopper(time_limit)
-    # param_space={
-    #     "batch_size": (32, 2048),
-    #     "lr": (0.001, 0.1),
-    #     "epochs": (30, 180),
-    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-    #     "optimizer_name": ["adam", "sgd"],
-    #     }
-
-    # Bayes = BayesSearchCV(
-    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-    #     search_spaces=param_space,
-    #     n_iter=50,
-    #     cv=3,
-    #     verbose=1,
-    #     n_jobs=-1,
-    # )
-
-    # with open('CNN32_2l_BO_results_2h.txt', 'w') as f:
-    #     pass
-
-    # start_time = time.perf_counter()
-    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
-    # end_time = time.perf_counter()
-
-    # iteration_times = deadline_stopper.iter_time
-    # search_time = end_time - start_time
-    # results = Bayes.cv_results_
-    # results_df = pd.DataFrame(results)
-
-    # best_params = Bayes.best_params_
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Parameters:", best_params)
-    # print("Bayesian Search Time:", search_time)
-
-    # accuracy, kappa, ece, Time = [], [], [], []
-
-    # newresults = []
-    # with open('CNN32_2l_BO_results_2h.txt', 'r') as f:
-    #     data = f.readlines()
-    #     linect = 0
-    #     for line in data:
-    #         if "Time:" in line:
-    #             index = line.find("Time:")
-
-    #             i = linect // 3 #+ linect % 3
-
-    #             newtime = iteration_times[i]/3
-    #             linect += 1
-                
-    #             newline = line[:index + len("Time: ")] + str(newtime) + "\n"
-    #             newresults.append(newline)
-    #         else:
-    #             newresults.append(line)
-
-    # with open('CNN32_2l_BO_results_2h.txt', 'w') as f:
-    #     f.writelines(newresults)
-
-    # with open('CNN32_2l_BO_results_2h.txt', 'r') as f:
-    #     data = f.readlines()
-
-    # for line in data:
-    #     if "Time: " in line:
-    #         numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
-    #         if numbers:
-    #             accuracy.append(float(numbers[0]))
-    #             kappa.append(float(numbers[1]))
-    #             ece.append(float(numbers[2]))
-    #             Time.append(float(numbers[3]))
-
-    # print("sum time:", np.sum(iteration_times))
-   
-
-
-
-
-
-
+  
     for classes in classes_space:
         d1 = {}
 
@@ -907,7 +469,7 @@ def run_cnn32_2l():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+            acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
                 cnn32_2l,
                 train_images,
                 train_labels,
@@ -916,11 +478,12 @@ def run_cnn32_2l():
                 test_images,
                 test_labels,
                 optimizer_name="adam",
-                batch=202,
-                epochs=35,
-                lr=0.0077354380203642695,
-                weight_decay=0.0030661314627527156,
+                epochs=86,
+                batch=108,
+                lr=0.0011001976331431065,
+                weight_decay=0.00015557749931887404,
             )
+            cnn32_2l_acc.append(acc)
             cnn32_2l_kappa.append(cohen_kappa)
             cnn32_2l_ece.append(ece)
             cnn32_2l_train_time.append(train_time)
@@ -970,227 +533,27 @@ def run_cnn32_2l():
         pickle.dump(cnn32_2l, f)
 
     print("cnn32_2l finished")
-    write_result(prefix + "cnn32_2l_kappa_best_30min.txt", cnn32_2l_kappa)
-    write_result(prefix + "cnn32_2l_ece.txt", cnn32_2l_ece)
-    write_result(prefix + "cnn32_2l_train_time.txt", cnn32_2l_train_time)
-    write_result(prefix + "cnn32_2l_test_time.txt", cnn32_2l_test_time)
-    write_result(prefix + "cnn32_2l_probs&labels.txt", cnn32_2l_probs_labels)
-    write_json(prefix + "cnn32_2l_kappa_best.json", cnn32_2l_kappa)
-    write_json(prefix + "cnn32_2l_ece.json", cnn32_2l_ece)
-    write_json(prefix + "cnn32_2l_train_time.json", cnn32_2l_train_time)
-    write_json(prefix + "cnn32_2l_test_time.json", cnn32_2l_test_time)
+    write_result(prefix + "cnn32_2l_acc_4hr.txt", cnn32_2l_acc)
+    write_result(prefix + "cnn32_2l_kappa_4hr.txt", cnn32_2l_kappa)
+    write_result(prefix + "cnn32_2l_ece_4hr.txt", cnn32_2l_ece)
+    write_result(prefix + "cnn32_2l_train_time_4hr.txt", cnn32_2l_train_time)
+    write_result(prefix + "cnn32_2l_test_time_4hr.txt", cnn32_2l_test_time)
+    write_result(prefix + "cnn32_2l_probs&labels_4hr.txt", cnn32_2l_probs_labels)
+    write_json(prefix + "cnn32_2l_acc_4hr.json", cnn32_2l_acc)
+    write_json(prefix + "cnn32_2l_kappa_4hr.json", cnn32_2l_kappa)
+    write_json(prefix + "cnn32_2l_ece_4hr.json", cnn32_2l_ece)
+    write_json(prefix + "cnn32_2l_train_time_4hr.json", cnn32_2l_train_time)
+    write_json(prefix + "cnn32_2l_test_time_4hr.json", cnn32_2l_test_time)
 
 
 def run_cnn32_5l():
+    cnn32_5l_acc = []
     cnn32_5l_kappa = []
     cnn32_5l_ece = []
     cnn32_5l_train_time = []
     cnn32_5l_test_time = []
     cnn32_5l_probs_labels = []
     storage_dict = {}
-
-
-    # # Grid search for best hyperparameters
-
-    # cnn32_5l = SimpleCNN32Filter5Layers(num_classes=18)
-
-    # class CNN32Wrapper(BaseEstimator):
-    #     def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
-    #         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #         self.model = cnn32_5l.to(self.device)
-    #         self.lr = lr
-    #         self.batch_size = batch_size
-    #         self.epochs = epochs
-    #         self.criterion = criterion
-    #         self.optimizer_name = optimizer_name
-    #         self.Valid_X = Valid_X
-    #         self.Valid_y = Valid_y
-    #         self.trial_start_time = time.perf_counter()
-    #         self.trial_end_time = None
-
-    #         if optimizer_name == 'sgd':
-    #             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
-    #         elif optimizer_name == 'adam':
-    #             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-    #         else:
-    #             raise ValueError(f"Unknown optimizer: {optimizer_name}")
-
-    #     def fit(self, X, y):
-    #         max_epochs = [0]
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         self.Valid_X = self.Valid_X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         criterion = self.criterion
-    #         optimizer = self.optimizer
-    #         prev_loss = float("inf")
-    #         flag = 0
-    #         for epoch in range(self.epochs):
-    #             model.train()
-    #             for i in range(0, len(X), self.batch_size):
-    #                 inputs = X[i : i + self.batch_size].to(self.device)
-    #                 labels = y[i : i + self.batch_size].to(self.device)
-    #                 optimizer.zero_grad()
-    #                 if inputs.shape[0] <= 2:
-    #                     continue
-    #                 outputs = model(inputs)
-    #                 loss = criterion(outputs, labels)
-    #                 loss.backward()
-    #                 optimizer.step()
-
-    #             model.eval()
-    #             cur_loss = 0
-    #             with torch.no_grad():
-    #                 for i in range(0, len(self.Valid_X), self.batch_size):
-    #                     # get the inputs
-    #                     inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
-    #                     labels = self.Valid_y[i : i + self.batch_size].to(self.device)
-    #                     if inputs.shape[0] == 1:
-    #                         inputs = torch.cat((inputs, inputs, inputs), dim = 0)
-    #                         labels = torch.cat((labels, labels, labels), dim = 0)
-
-    #                     # forward
-    #                     outputs = model(inputs)
-    #                     loss = criterion(outputs, labels)
-    #                     cur_loss += loss
-    #             # early stop if 3 epochs in a row no loss decrease
-    #             if cur_loss < prev_loss:
-    #                 prev_loss = cur_loss
-    #                 flag = 0
-    #             else:
-    #                 flag += 1
-    #                 if flag >= 3:
-    #                     max_epochs.append(epoch)
-    #                     break
-    #         return self
-        
-    #     def predict(self, X):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         test_preds = []
-    #         with torch.no_grad():
-    #             inputs = X.to(self.device)
-    #             outputs = model(inputs)
-    #             _, predicted = torch.max(outputs.data, 1)
-    #             # predicted = predicted.unsqueeze(0)
-    #             # test_preds = np.concatenate((test_preds, predicted.tolist()))
-    #             return predicted.cpu().numpy()
-            
-    #     def predict_proba(self, X):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         test_probs = []
-    #         with torch.no_grad():
-    #             outputs = model(X.to(self.device))
-    #             test_prob = nn.Softmax(dim=1)(outputs)
-    #             test_probs = test_prob.cpu().numpy()
-    #             return test_probs
-
-    #     def score(self, X, y):
-    #         X = X.reshape(-1, 1, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         predictions = self.predict(X)
-    #         acc = accuracy_score(y, predictions)
-    #         self.trial_end_time = time.perf_counter()
-    #         valid_pred = self.predict(self.Valid_X)
-    #         valid_acc = accuracy_score(self.Valid_y, valid_pred)
-    #         valid_probs = self.predict_proba(self.Valid_X)
-    #         valid_kappa = cohen_kappa_score(self.Valid_y, valid_pred)
-    #         valid_ece = get_ece(valid_probs, valid_pred, self.Valid_y)
-    #         with open('CNN32_5l_BO_results_2h.txt', 'a') as f:
-    #             f.write(f"Valid Accuracy: {valid_acc}, Valid Kappa: {valid_kappa}, Valid ECE: {valid_ece}, Time: {'placeholder'}\n")
-
-    #         return acc
-
-    # # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
-    # scaler = StandardScaler()
-    # train_images = scaler.fit_transform(fsdk18_train_images)
-    # valid_images = scaler.transform(fsdk18_valid_images)
-    
-    # train_images = torch.FloatTensor(train_images).unsqueeze(1)
-    # train_labels = torch.LongTensor(fsdk18_train_labels)
-    # valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
-    # valid_labels = torch.LongTensor(fsdk18_valid_labels)
-
-    # # result = run_BOHB(cnn32, train_images, train_labels, valid_images, valid_labels)
-
-    # # Bayesian optimization for best hyperparameters
-    # time_limit = 7200 # 2 hours  
-    # deadline_stopper = DeadlineStopper(time_limit)
-    # param_space={
-    #     "batch_size": (32, 2048),
-    #     "lr": (0.001, 0.1),
-    #     "epochs": (30, 180),
-    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-    #     "optimizer_name": ["adam", "sgd"],
-    #     }
-
-    # Bayes = BayesSearchCV(
-    #     estimator=CNN32Wrapper(Valid_X=valid_images, Valid_y=valid_labels),
-    #     search_spaces=param_space,
-    #     n_iter=50,
-    #     cv=3,
-    #     verbose=1,
-    #     n_jobs=-1,
-    # )
-
-    # with open('CNN32_5l_BO_results_2h.txt', 'w') as f:
-    #     pass
-
-    # start_time = time.perf_counter()
-    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
-    # end_time = time.perf_counter()
-
-    # iteration_times = deadline_stopper.iter_time
-    # search_time = end_time - start_time
-    # results = Bayes.cv_results_
-    # results_df = pd.DataFrame(results)
-
-    # best_params = Bayes.best_params_
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Parameters:", best_params)
-    # print("Bayesian Search Time:", search_time)
-
-    # accuracy, kappa, ece, Time = [], [], [], []
-
-    # newresults = []
-    # with open('CNN32_5l_BO_results_2h.txt', 'r') as f:
-    #     data = f.readlines()
-    #     linect = 0
-    #     for line in data:
-    #         if "Time:" in line:
-    #             index = line.find("Time:")
-
-    #             i = linect // 3 #+ linect % 3
-
-    #             newtime = iteration_times[i]/3
-    #             linect += 1
-                
-    #             newline = line[:index + len("Time: ")] + str(newtime) + "\n"
-    #             newresults.append(newline)
-    #         else:
-    #             newresults.append(line)
-
-    # with open('CNN32_5l_BO_results_2h.txt', 'w') as f:
-    #     f.writelines(newresults)
-
-    # with open('CNN32_5l_BO_results_2h.txt', 'r') as f:
-    #     data = f.readlines()
-
-    # for line in data:
-    #     if "Time: " in line:
-    #         numbers = re.findall(r"[-+]?\d*\.\d+|\d+", line)
-    #         if numbers:
-    #             accuracy.append(float(numbers[0]))
-    #             kappa.append(float(numbers[1]))
-    #             ece.append(float(numbers[2]))
-    #             Time.append(float(numbers[3]))
-
-    # print("sum time:", np.sum(iteration_times))
-
-
 
 
     for classes in classes_space:
@@ -1219,7 +582,7 @@ def run_cnn32_5l():
                 train_images, train_labels, test_images, test_labels, samples, classes
             )
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+            acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
                 cnn32_5l,
                 train_images,
                 train_labels,
@@ -1228,13 +591,14 @@ def run_cnn32_5l():
                 test_images,
                 test_labels,
                 optimizer_name="sgd",
-                lr=0.0010888430371218745,
-                epochs=100,
+                lr=0.00114927673139284,
+                epochs=117,
                 batch=227,
                 dampening=0.8295654584238159,
-                momentum=0.9723197429713939217,
-                weight_decay=0.0011744534251890575,
+                momentum=0.9666948703632617,
+                weight_decay=0.002546558192892438,
             )
+            cnn32_5l_acc.append(acc)
             cnn32_5l_kappa.append(cohen_kappa)
             cnn32_5l_ece.append(ece)
             cnn32_5l_train_time.append(train_time)
@@ -1284,15 +648,17 @@ def run_cnn32_5l():
         pickle.dump(cnn32_5l, f)
 
     print("cnn32_5l finished")
-    write_result(prefix + "cnn32_5l_kappa_best_2hr.txt", cnn32_5l_kappa)
-    write_result(prefix + "cnn32_5l_ece.txt", cnn32_5l_ece)
-    write_result(prefix + "cnn32_5l_train_time.txt", cnn32_5l_train_time)
-    write_result(prefix + "cnn32_5l_test_time.txt", cnn32_5l_test_time)
-    write_result(prefix + "cnn32_5l_probs&labels.txt", cnn32_5l_probs_labels)
-    write_json(prefix + "cnn32_5l_kappa.json", cnn32_5l_kappa)
-    write_json(prefix + "cnn32_5l_ece.json", cnn32_5l_ece)
-    write_json(prefix + "cnn32_5l_train_time.json", cnn32_5l_train_time)
-    write_json(prefix + "cnn32_5l_test_time.json", cnn32_5l_test_time)
+    write_result(prefix + "cnn32_5l_acc_4hr.txt", cnn32_5l_acc)
+    write_result(prefix + "cnn32_5l_kappa_4hr.txt", cnn32_5l_kappa)
+    write_result(prefix + "cnn32_5l_ece_4hr.txt", cnn32_5l_ece)
+    write_result(prefix + "cnn32_5l_train_time_4hr.txt", cnn32_5l_train_time)
+    write_result(prefix + "cnn32_5l_test_time_4hr.txt", cnn32_5l_test_time)
+    write_result(prefix + "cnn32_5l_probs&labels_4hr.txt", cnn32_5l_probs_labels)
+    write_json(prefix + "cnn32_5l_acc_4hr.json", cnn32_5l_acc)
+    write_json(prefix + "cnn32_5l_kappa_4hr.json", cnn32_5l_kappa)
+    write_json(prefix + "cnn32_5l_ece_4hr.json", cnn32_5l_ece)
+    write_json(prefix + "cnn32_5l_train_time_4hr.json", cnn32_5l_train_time)
+    write_json(prefix + "cnn32_5l_test_time_4hr.json", cnn32_5l_test_time)
 
 def train_resnet_wrapper(config, budget, X_train, y_train, X_valid, y_valid):
     """
@@ -1325,6 +691,7 @@ def train_resnet_wrapper(config, budget, X_train, y_train, X_valid, y_valid):
     return {'loss': validation_loss, 'info': {'budget': budget}}
 
 def run_resnet18():
+    resnet18_acc = []
     resnet18_kappa = []
     resnet18_ece = []
     resnet18_train_time = []
@@ -1333,159 +700,11 @@ def run_resnet18():
     storage_dict = {}
 
 
-
-    # # Grid search for best hyperparameters
-
-    # resnet = models.resnet18(pretrained=True)
-
-    # num_ftrs = resnet.fc.in_features
-    # resnet.fc = nn.Linear(num_ftrs, 18)
-
-    # class ResnetWrapper(BaseEstimator):
-    #     def __init__(self, lr=0.01, batch_size=32, epochs=30, criterion = nn.CrossEntropyLoss(), optimizer_name='adam', Valid_X=None, Valid_y=None):
-    #         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #         self.model = resnet.to(self.device)
-    #         self.lr = lr
-    #         self.batch_size = batch_size
-    #         self.epochs = epochs
-    #         self.criterion = criterion
-    #         self.optimizer_name = optimizer_name
-    #         self.Valid_X = Valid_X
-    #         self.Valid_y = Valid_y
-    #         # self.momentum = momentum
-    #         # self.weight_decay = weight_decay
-
-    #         if optimizer_name == 'sgd':
-    #             self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
-    #         elif optimizer_name == 'adam':
-    #             self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-    #         else:
-    #             raise ValueError(f"Unknown optimizer: {optimizer_name}")
-
-    #     def fit(self, X, y):
-    #         max_epochs = [0]
-    #         X = X.reshape(-1, 3, 32, 32)
-    #         self.Valid_X = self.Valid_X.reshape(-1, 3, 32, 32)
-    #         model = self.model
-    #         criterion = self.criterion
-    #         optimizer = self.optimizer
-    #         prev_loss = float("inf")
-    #         flag = 0
-    #         for epoch in range(self.epochs):
-    #             model.train()
-    #             for i in range(0, len(X), self.batch_size):
-    #                 inputs = X[i : i + self.batch_size].to(self.device)
-    #                 labels = y[i : i + self.batch_size].to(self.device)
-    #                 optimizer.zero_grad()
-    #                 if inputs.shape[0] <= 2:
-    #                     continue
-    #                 outputs = model(inputs)
-    #                 loss = criterion(outputs, labels)
-    #                 loss.backward()
-    #                 optimizer.step()
-
-    #             model.eval()
-    #             cur_loss = 0
-    #             with torch.no_grad():
-    #                 for i in range(0, len(self.Valid_X), self.batch_size):
-    #                     # get the inputs
-    #                     inputs = self.Valid_X[i : i + self.batch_size].to(self.device)
-    #                     labels = self.Valid_y[i : i + self.batch_size].to(self.device)
-    #                     if inputs.shape[0] == 1:
-    #                         inputs = torch.cat((inputs, inputs, inputs), dim = 0)
-    #                         labels = torch.cat((labels, labels, labels), dim = 0)
-
-    #                     # forward
-    #                     outputs = model(inputs)
-    #                     loss = criterion(outputs, labels)
-    #                     cur_loss += loss
-    #             # early stop if 3 epochs in a row no loss decrease
-    #             if cur_loss < prev_loss:
-    #                 prev_loss = cur_loss
-    #                 flag = 0
-    #             else:
-    #                 flag += 1
-    #                 if flag >= 3:
-    #                     max_epochs.append(epoch)
-    #                     break
-    #                 else:
-    #                     max_epochs.append(self.epochs)
-    #         # print(np.max(max_epochs))
-    #         return self
-        
-    #     def predict(self, X):
-    #         X = X.reshape(-1, 3, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         with torch.no_grad():
-    #             outputs = model(X.to(self.device))
-    #             _, predicted = torch.max(outputs.data, 1)
-    #             return predicted.cpu()
-
-    #     def score(self, X, y):
-    #         X = X.reshape(-1, 3, 32, 32)
-    #         model = self.model
-    #         model.eval()
-    #         predictions = self.predict(X)
-    #         acc = accuracy_score(y, predictions)
-    #         return acc
-
-    # # train_images, train_labels, valid_images, valid_labels ,test_images, test_labels = prepare_data(fsdk18_train_images, fsdk18_train_labels, fsdk18_test_images, fsdk18_test_labels, samples_space[0] ,classes_space[0])
-    # scaler = StandardScaler()
-    # train_images = scaler.fit_transform(fsdk18_train_images)
-    # valid_images = scaler.transform(fsdk18_valid_images)
-    
-    # train_images = torch.FloatTensor(train_images).unsqueeze(1)
-    # train_labels = torch.LongTensor(fsdk18_train_labels)
-    # valid_images = torch.FloatTensor(valid_images).unsqueeze(1)
-    # valid_labels = torch.LongTensor(fsdk18_valid_labels)
-
-    # train_images = torch.cat((train_images, train_images, train_images), dim=1)
-    # valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
-
-    # # Bayesian optimization for best hyperparameters
-    # time_limit = 7200 # 2 hours  
-    # deadline_stopper = DeadlineStopper(time_limit)
-    # start_time = time.perf_counter()
-    # param_space={
-    #     "batch_size": [32, 64, 128 ,256, 512, 1024, 2048],
-    #     "lr": [0.001, 0.01, 0.1],
-    #     "epochs": list(range(60, 121, 10)),
-    #     # "momentum": [0.7, 0.8, 0.9, 0.95, 0.99],
-    #     # "weight_decay": [1e-4, 1e-5, 1e-6],
-    #     # "criterion": [nn.CrossEntropyLoss(), nn.NLLLoss()],
-    #     "optimizer_name": ["adam", "sgd"],
-    #     }
-
-    # Bayes = BayesSearchCV(
-    #     estimator=ResnetWrapper(Valid_X=valid_images, Valid_y=valid_labels),
-    #     search_spaces=param_space,
-    #     n_iter=50,
-    #     cv=3,
-    #     verbose=1,
-    #     n_jobs=-1,
-    # )
-
-    # Bayes.fit(train_images, train_labels, callback=deadline_stopper)
-
-    # best_params = Bayes.best_params_
-    # end_time = time.perf_counter()
-    # search_time = end_time - start_time
-    # print("Best Accuracy:", Bayes.best_score_)
-    # print("Best Parameters:", best_params)
-    # print("Bayesian Search Time:", search_time)
-    # with open("Bayesian Search time res.txt", "w") as f:
-    #     f.write(str(search_time)) 
-
-
     ### Best set of hyperparameters for 3 classes:L
         # epochs=60,
         # lr=0.001,
         # batch=32,
         # optimizer_name="adam",
-
-
-
 
     for classes in classes_space:
         d1 = {}
@@ -1521,7 +740,7 @@ def run_resnet18():
             valid_images = torch.cat((valid_images, valid_images, valid_images), dim=1)
             test_images = torch.cat((test_images, test_images, test_images), dim=1)
 
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+            acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
                 resnet,
                 train_images,
                 train_labels,
@@ -1529,14 +748,15 @@ def run_resnet18():
                 valid_labels,
                 test_images,
                 test_labels,
-                epochs=87,
-                lr=0.0018371144479809283,
-                batch=44,
                 optimizer_name="adam",
-                # dampening=0.8295654584238159,
-                # momentum=0.9666948703632617,
-                weight_decay=0.00010957477139878025,
+                lr=0.001238643790422043,
+                epochs=88,
+                batch=15,
+                dampening=0.6930353552983253,
+                momentum=0.07697221744171885,
+                weight_decay=0.00028275993975422354,
             )
+            resnet18_acc.append(acc)
             resnet18_kappa.append(cohen_kappa)
             resnet18_ece.append(ece)
             resnet18_train_time.append(train_time)
@@ -1586,15 +806,17 @@ def run_resnet18():
 
 
     print("resnet18 finished")
-    write_result(prefix + "resnet18_kappa_best_2hr.txt", resnet18_kappa)
-    write_result(prefix + "resnet18_ece.txt", resnet18_ece)
-    write_result(prefix + "resnet18_train_time.txt", resnet18_train_time)
-    write_result(prefix + "resnet18_test_time.txt", resnet18_test_time)
-    write_result(prefix + "resnet18_probs&labels.txt", resnet18_probs_labels)
-    write_json(prefix + "resnet18_kappa.json", resnet18_kappa)
-    write_json(prefix + "resnet18_ece.json", resnet18_ece)
-    write_json(prefix + "resnet18_train_time.json", resnet18_train_time)
-    write_json(prefix + "resnet18_test_time.json", resnet18_test_time)
+    write_result(prefix + "resnet18_acc_4hr.txt", resnet18_acc)
+    write_result(prefix + "resnet18_kappa_4hr.txt", resnet18_kappa)
+    write_result(prefix + "resnet18_ece_4hr.txt", resnet18_ece)
+    write_result(prefix + "resnet18_train_time_4hr.txt", resnet18_train_time)
+    write_result(prefix + "resnet18_test_time_4hr.txt", resnet18_test_time)
+    write_result(prefix + "resnet18_probs&labels_4hr.txt", resnet18_probs_labels)
+    write_json(prefix + "resnet18_acc_4hr.json", resnet18_acc)
+    write_json(prefix + "resnet18_kappa_4hr.json", resnet18_kappa)
+    write_json(prefix + "resnet18_ece_4hr.json", resnet18_ece)
+    write_json(prefix + "resnet18_train_time_4hr.json", resnet18_train_time)
+    write_json(prefix + "resnet18_test_time_4hr.json", resnet18_test_time)
 
 
 if __name__ == "__main__":
@@ -1617,7 +839,7 @@ if __name__ == "__main__":
         train_label["label"].map(train_label["label"].value_counts() >= 0)
     ]
 
-    # # get the sample size of each class
+    ### get the sample size of each class
     # sample_size = labels_chosen.label.value_counts().to_dict()
     # print("sample_sizes:", sample_size)
     # print("labels_chosen:", labels_chosen.iloc[:, 1:2].value_counts())
@@ -1665,7 +887,7 @@ if __name__ == "__main__":
     )
 
     nums = list(range(18))
-    samples_space = np.geomspace(10, 450, num=6, dtype=int)
+    samples_space = np.geomspace(30, 1500, num=6, dtype=int)
     # define path, samples space and number of class combinations
     if feature_type == "melspectrogram":
         prefix = args.m + "_class_mel/"
@@ -1677,6 +899,17 @@ if __name__ == "__main__":
     # create list of classes with const random seed
     random.Random(5).shuffle(nums)
     classes_space = list(combinations_45(nums, n_classes))
+
+    # run a test combinations (three 15-class combinations):
+    # def test_combinations(nums, start_indices, length):
+    #     return [tuple(nums[start:start+length]) for start in start_indices]
+
+    # nums = list(range(18)) 
+    # start_indices = [0, 1, 2]  
+    # length = 15  
+    # classes_space = test_combinations(nums, start_indices, length)
+
+    # print("classes_space:", len(classes_space))
 
     # scale the data
     # x_spec = x_spec[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
@@ -1716,8 +949,8 @@ if __name__ == "__main__":
     # print("Running GBT tuning \n")
     # run_GBT()
 
-    print("Running RF tuning \n")
-    run_naive_rf()
+    # print("Running RF tuning \n")
+    # run_naive_rf()
 
     # print("Running CNN32 tuning \n")
     # run_cnn32()
@@ -1728,8 +961,8 @@ if __name__ == "__main__":
     # print("Running CNN32_5l tuning \n")
     # run_cnn32_5l()
 
-    # print("Running Resnet tuning \n")
-    # run_resnet18()
+    print("Running Resnet tuning \n")
+    run_resnet18()
     
 
 
