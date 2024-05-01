@@ -464,6 +464,7 @@ def run_rf_image_set(
 
     return (
         accuracy_score(test_labels, test_preds),
+        cohen_kappa_score(test_preds, test_labels),
         get_ece(test_probs, test_preds, test_labels),
         train_time,
         test_time,
@@ -482,10 +483,13 @@ def run_dn_image_es(
     test_data,
     test_labels,
     epochs=30,
-    lr=0.001,
+    lr=0.1,
     batch=60,
     criterion=nn.CrossEntropyLoss(),
     optimizer_name="adam",
+    momentum=0,
+    weight_decay=0,
+    dampening=0,
 ):
     """
     Peforms multiclass predictions for a deep network classifier with set number
@@ -498,9 +502,9 @@ def run_dn_image_es(
     # criterion = nn.CrossEntropyLoss()
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     if optimizer_name == 'sgd':
-        optimizer = optim.SGD(model.parameters(), lr=lr)
+        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay, dampening=dampening)
     elif optimizer_name == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=lr)
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     else:
         raise ValueError(f"Unknown optimizer: {optimizer_name}")
     # early stopping setup
@@ -581,6 +585,7 @@ def run_dn_image_es(
     test_labels = np.array(test_labels.tolist())
     return (
         accuracy_score(test_preds, test_labels),
+        cohen_kappa_score(test_preds, test_labels),
         get_ece(test_probs, test_preds, test_labels),
         train_time,
         test_time,
