@@ -41,6 +41,7 @@ warnings.filterwarnings("ignore")
 np.random.seed(317)
 
 def run_GBT():
+    gbt_acc = []
     gbt_kappa = []
     gbt_ece = []
     gbt_train_time = []
@@ -58,23 +59,20 @@ def run_GBT():
             # train data
             # print("init GBT model")
             gbt_model = xgb.XGBClassifier(
-                n_estimators=600,
-                max_depth=32,
+                n_estimators=882,
+                max_depth=20,
                 learning_rate=0.1,
                 objective='multi:softprob',
-                random_state=317
+                seed=317,
+                # min_child_weight=1,
+                # colsample_bytree=0.34972524073852085,
+                # colsample_bylevel=0.5031265370478464,
+                # colsample_bynode=0.5319097088857504,
+                # gamma=0.8146208192932376,
+                # subsample=0.7708098254346498,
             )
-            # print("running gbt on sample:", samples)
-            # lct = 0
-            # print(type(fsdk18_test_images))
-            # for img in fsdk18_test_images:
-            #     image = img.reshape(32, 32)
-            #     plt.imshow(image)
-            #     label = index_to_labels.get(fsdk18_test_labels[lct])
-            #     plt.title("{} | {}".format(fsdk18_test_labels[lct], label))
-            #     lct += 1
-            #     plt.show()
-            cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_gbt_image_set(
+
+            acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_gbt_image_set(
                 gbt_model,
                 fsdk18_train_images,
                 fsdk18_train_labels,
@@ -83,10 +81,16 @@ def run_GBT():
                 samples,
                 classes,
             )
+            gbt_acc.append(acc)
             gbt_kappa.append(cohen_kappa)
             gbt_ece.append(ece)
             gbt_train_time.append(train_time)
             gbt_test_time.append(test_time)
+
+            # actual_test_labels = []
+            # for i in range(len(test_labels)):
+            #     actual_test_labels.append(int(classes[test_labels[i]]))
+
             classes = sorted(classes)
             gbt_probs_labels.append("Classes:" + str(classes))
             gbt_probs_labels.append("Sample size:" + str(samples))
@@ -97,8 +101,7 @@ def run_GBT():
                 l3.append([test_probs[i].tolist(), test_labels[i]])
             d1[samples] = l3
         storage_dict[tuple(sorted(classes))] = d1
-    # print(gbt_probs_labels)
-    # switch the classes and sample sizes
+
     switched_storage_dict = {}
     for classes, class_data in storage_dict.items():
         for samples, data in class_data.items():
@@ -112,15 +115,18 @@ def run_GBT():
     with open(prefix + 'gbt_org.pkl', 'wb') as f:
         pickle.dump(gbt_model, f)
     print("gbt finished")
-    write_result(prefix + "gbt_kappa_best.txt", gbt_kappa)
-    write_result(prefix + "gbt_ece.txt", gbt_ece)
-    write_result(prefix + "gbt_train_time.txt", gbt_train_time)
-    write_result(prefix + "gbt_test_time.txt", gbt_test_time)
-    write_result(prefix + "gbt_probs&labels.txt", gbt_probs_labels)
-    write_json(prefix + "gbt_kappa_best.json", gbt_kappa)
-    write_json(prefix + "gbt_ece.json", gbt_ece)
-    write_json(prefix + "gbt_train_time.json", gbt_train_time)
-    write_json(prefix + "gbt_test_time.json", gbt_test_time)
+    write_result(prefix + "gbt_acc_4hr.txt", gbt_acc)
+    write_result(prefix + "gbt_kappa_4hr.txt", gbt_kappa)
+    write_result(prefix + "gbt_ece_4hr.txt", gbt_ece)
+    write_result(prefix + "gbt_train_time_4hr.txt", gbt_train_time)
+    write_result(prefix + "gbt_test_time_4hr.txt", gbt_test_time)
+    write_result(prefix + "gbt_probs&labels_4hr.txt", gbt_probs_labels)
+    write_json(prefix + "gbt_acc_4hr.json", gbt_acc)
+    write_json(prefix + "gbt_kappa_4hr.json", gbt_kappa)
+    write_json(prefix + "gbt_ece_4hr.json", gbt_ece)
+    write_json(prefix + "gbt_train_time_4hr.json", gbt_train_time)
+    write_json(prefix + "gbt_test_time_4hr.json", gbt_test_time)
+
 
 def run_BOHB():
     config_space = CS.ConfigurationSpace()
@@ -229,6 +235,37 @@ def target_function_network(target_wrapper, config, seed, budget, train_data, tr
     return validation_error
 
 
+def train_resnet_wrapper(config, budget, X_train, y_train, X_valid, y_valid):
+    """
+    Train the ResnetWrapper model with given configuration and return the loss.
+
+    Args:
+        config (dict): Configuration dictionary containing hyperparameters.
+        budget (float): Budget parameter from BOAH, not used in this context.
+        X_train (ndarray): Training data.
+        y_train (ndarray): Training labels.
+        X_valid (ndarray): Validation data.
+        y_valid (ndarray): Validation labels.
+
+    Returns:
+        dict: A dictionary containing the 'loss' and other information.
+    """
+    # Create an instance of ResnetWrapper with the provided config
+    model = ResnetWrapper(**config, Valid_X=X_valid, Valid_y=y_valid)
+    
+    # Fit the model using the training data
+    model.fit(X_train, y_train)
+
+    # Here, you should implement the logic to evaluate the model.
+    # For instance, you can use the model.score() method if you have it,
+    # or any other metric like validation loss, accuracy, etc.
+    # Assuming model.score() returns the accuracy, and you want to minimize the loss:
+    validation_loss = 1 - model.score(X_valid, y_valid)  # Example metric
+
+    # Return the result in the required format for BOAH optimization
+    return {'loss': validation_loss, 'info': {'budget': budget}}
+
+
 def run_naive_rf():
     naive_rf_acc = []
     naive_rf_kappa = []
@@ -261,6 +298,10 @@ def run_naive_rf():
             naive_rf_ece.append(ece)
             naive_rf_train_time.append(train_time)
             naive_rf_test_time.append(test_time)
+
+            # actual_test_labels = []
+            # for i in range(len(test_labels)):
+            #     actual_test_labels.append(int(classes[test_labels[i]]))
 
             classes = sorted(classes)
             navie_rf_probs_labels.append("Classes:" + str(classes))
@@ -299,17 +340,17 @@ def run_naive_rf():
         pickle.dump(RF_best, f)
 
     print("naive_rf finished")
-    write_result(prefix + "naive_rf_acc_4hr.txt", naive_rf_acc)
-    write_result(prefix + "naive_rf_kappa_4hr.txt", naive_rf_kappa)
-    write_result(prefix + "naive_rf_ece_4hr.txt", naive_rf_ece)
-    write_result(prefix + "naive_rf_train_time_4hr.txt", naive_rf_train_time)
-    write_result(prefix + "naive_rf_test_time_4hr.txt", naive_rf_test_time)
-    write_result(prefix + "naive_rf_probs&labels_4hr.txt", navie_rf_probs_labels)
-    write_json(prefix + "naive_rf_acc_4hr.json", naive_rf_acc)
-    write_json(prefix + "naive_rf_kappa_best_4hr.json", naive_rf_kappa)
-    write_json(prefix + "naive_rf_ece_4hrs.json", naive_rf_ece)
-    write_json(prefix + "naive_rf_train_time_4hr.json", naive_rf_train_time)
-    write_json(prefix + "naive_rf_test_time_4hr.json", naive_rf_test_time)
+    # write_result(prefix + "naive_rf_acc_4hr.txt", naive_rf_acc)
+    # write_result(prefix + "naive_rf_kappa_4hr.txt", naive_rf_kappa)
+    # write_result(prefix + "naive_rf_ece_4hr.txt", naive_rf_ece)
+    # write_result(prefix + "naive_rf_train_time_4hr.txt", naive_rf_train_time)
+    # write_result(prefix + "naive_rf_test_time_4hr.txt", naive_rf_test_time)
+    # write_result(prefix + "naive_rf_probs&labels_4hr.txt", navie_rf_probs_labels)
+    # write_json(prefix + "naive_rf_acc_4hr.json", naive_rf_acc)
+    # write_json(prefix + "naive_rf_kappa_best_4hr.json", naive_rf_kappa)
+    # write_json(prefix + "naive_rf_ece_4hrs.json", naive_rf_ece)
+    # write_json(prefix + "naive_rf_train_time_4hr.json", naive_rf_train_time)
+    # write_json(prefix + "naive_rf_test_time_4hr.json", naive_rf_test_time)
 
 
 def run_cnn32():
@@ -326,9 +367,6 @@ def run_cnn32():
         # epochs=100,
         # batch=1024,
         # lr=0.001,
-
-
-
     
     for classes in classes_space:
         d1 = {}
@@ -345,6 +383,9 @@ def run_cnn32():
             test_images = testx.copy()
             test_labels = testy.copy()
 
+            test_valid_images = remainx.copy()
+            test_valid_labels = remainy.copy()
+
             (
                 train_images,
                 train_labels,
@@ -353,7 +394,7 @@ def run_cnn32():
                 test_images,
                 test_labels,
             ) = prepare_data(
-                train_images, train_labels, test_images, test_labels, samples, classes
+                train_images, train_labels, test_valid_images, test_valid_labels, samples, classes
             )
 
             acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
@@ -420,17 +461,17 @@ def run_cnn32():
         pickle.dump(cnn32, f)
 
     print("cnn32 finished")
-    write_result(prefix + "cnn32_acc_4hr.txt", cnn32_acc)
-    write_result(prefix + "cnn32_kappa_4hr.txt", cnn32_kappa)
-    write_result(prefix + "cnn32_ece_4hr.txt", cnn32_ece)
-    write_result(prefix + "cnn32_train_time_4hr.txt", cnn32_train_time)
-    write_result(prefix + "cnn32_test_time_4hr.txt", cnn32_test_time)
-    write_result(prefix + "cnn32_probs&labels_4hr.txt", cnn32_probs_labels)
-    write_json(prefix + "cnn32_acc_4hr.json", cnn32_acc)
-    write_json(prefix + "cnn32_kappa_4hr.json", cnn32_kappa)
-    write_json(prefix + "cnn32_ece_4hr.json", cnn32_ece)
-    write_json(prefix + "cnn32_train_time_4hr.json", cnn32_train_time)
-    write_json(prefix + "cnn32_test_time_4hr.json", cnn32_test_time)
+    # write_result(prefix + "cnn32_acc_4hr.txt", cnn32_acc)
+    # write_result(prefix + "cnn32_kappa_4hr.txt", cnn32_kappa)
+    # write_result(prefix + "cnn32_ece_4hr.txt", cnn32_ece)
+    # write_result(prefix + "cnn32_train_time_4hr.txt", cnn32_train_time)
+    # write_result(prefix + "cnn32_test_time_4hr.txt", cnn32_test_time)
+    # write_result(prefix + "cnn32_probs&labels_4hr.txt", cnn32_probs_labels)
+    # write_json(prefix + "cnn32_acc_4hr.json", cnn32_acc)
+    # write_json(prefix + "cnn32_kappa_4hr.json", cnn32_kappa)
+    # write_json(prefix + "cnn32_ece_4hr.json", cnn32_ece)
+    # write_json(prefix + "cnn32_train_time_4hr.json", cnn32_train_time)
+    # write_json(prefix + "cnn32_test_time_4hr.json", cnn32_test_time)
 
 
 def run_cnn32_2l():
@@ -442,7 +483,6 @@ def run_cnn32_2l():
     cnn32_2l_probs_labels = []
     storage_dict = {}
 
-  
     for classes in classes_space:
         d1 = {}
 
@@ -458,6 +498,9 @@ def run_cnn32_2l():
             test_images = testx.copy()
             test_labels = testy.copy()
 
+            test_valid_images = remainx.copy()
+            test_valid_labels = remainy.copy()
+
             (
                 train_images,
                 train_labels,
@@ -466,7 +509,7 @@ def run_cnn32_2l():
                 test_images,
                 test_labels,
             ) = prepare_data(
-                train_images, train_labels, test_images, test_labels, samples, classes
+                train_images, train_labels, test_valid_images, test_valid_labels, samples, classes
             )
 
             acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
@@ -555,7 +598,6 @@ def run_cnn32_5l():
     cnn32_5l_probs_labels = []
     storage_dict = {}
 
-
     for classes in classes_space:
         d1 = {}
 
@@ -571,6 +613,9 @@ def run_cnn32_5l():
             test_images = testx.copy()
             test_labels = testy.copy()
 
+            test_valid_images = remainx.copy()
+            test_valid_labels = remainy.copy()
+
             (
                 train_images,
                 train_labels,
@@ -579,7 +624,7 @@ def run_cnn32_5l():
                 test_images,
                 test_labels,
             ) = prepare_data(
-                train_images, train_labels, test_images, test_labels, samples, classes
+                train_images, train_labels, test_valid_images, test_valid_labels, samples, classes
             )
 
             acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
@@ -660,35 +705,6 @@ def run_cnn32_5l():
     write_json(prefix + "cnn32_5l_train_time_4hr.json", cnn32_5l_train_time)
     write_json(prefix + "cnn32_5l_test_time_4hr.json", cnn32_5l_test_time)
 
-def train_resnet_wrapper(config, budget, X_train, y_train, X_valid, y_valid):
-    """
-    Train the ResnetWrapper model with given configuration and return the loss.
-
-    Args:
-        config (dict): Configuration dictionary containing hyperparameters.
-        budget (float): Budget parameter from BOAH, not used in this context.
-        X_train (ndarray): Training data.
-        y_train (ndarray): Training labels.
-        X_valid (ndarray): Validation data.
-        y_valid (ndarray): Validation labels.
-
-    Returns:
-        dict: A dictionary containing the 'loss' and other information.
-    """
-    # Create an instance of ResnetWrapper with the provided config
-    model = ResnetWrapper(**config, Valid_X=X_valid, Valid_y=y_valid)
-    
-    # Fit the model using the training data
-    model.fit(X_train, y_train)
-
-    # Here, you should implement the logic to evaluate the model.
-    # For instance, you can use the model.score() method if you have it,
-    # or any other metric like validation loss, accuracy, etc.
-    # Assuming model.score() returns the accuracy, and you want to minimize the loss:
-    validation_loss = 1 - model.score(X_valid, y_valid)  # Example metric
-
-    # Return the result in the required format for BOAH optimization
-    return {'loss': validation_loss, 'info': {'budget': budget}}
 
 def run_resnet18():
     resnet18_acc = []
@@ -698,7 +714,6 @@ def run_resnet18():
     resnet18_test_time = []
     resnet18_probs_labels = []
     storage_dict = {}
-
 
     ### Best set of hyperparameters for 3 classes:L
         # epochs=60,
@@ -724,6 +739,9 @@ def run_resnet18():
             test_images = testx.copy()
             test_labels = testy.copy()
 
+            test_valid_images = remainx.copy()
+            test_valid_labels = remainy.copy()
+
             (
                 train_images,
                 train_labels,
@@ -732,7 +750,7 @@ def run_resnet18():
                 test_images,
                 test_labels,
             ) = prepare_data(
-                train_images, train_labels, test_images, test_labels, samples, classes
+                train_images, train_labels, test_valid_images, test_valid_labels, samples, classes
             )
 
             # need to duplicate channel because batch norm cant have 1 channel images
@@ -752,9 +770,9 @@ def run_resnet18():
                 lr=0.001238643790422043,
                 epochs=88,
                 batch=16,
-                dampening=0.6930353552983253,
-                momentum=0.07697221744171885,
-                weight_decay=0.00028275993975422354,
+                # dampening=0.6930353552983253,
+                # momentum=0.07697221744171885,
+                # weight_decay=0.00028275993975422354,
             )
             resnet18_acc.append(acc)
             resnet18_kappa.append(cohen_kappa)
@@ -886,8 +904,11 @@ if __name__ == "__main__":
         path_recordings, labels_chosen, get_labels, feature_type
     )
 
+    # define the samples space
     nums = list(range(18))
-    samples_space = np.geomspace(30, 1500, num=6, dtype=int)
+    samples_space = np.geomspace(10, 450, num=6, dtype=int)
+    # samples_space = np.geomspace(30, 1500, num=6, dtype=int)
+
     # define path, samples space and number of class combinations
     if feature_type == "melspectrogram":
         prefix = args.m + "_class_mel/"
@@ -916,7 +937,6 @@ if __name__ == "__main__":
     # print(x_spec.shape)
     x_spec = scale(x_spec.reshape(len(x_spec), -1), axis=1).reshape(len(x_spec), 32, 32)
     y_number = np.array(y_number)
-    # y_number = y_number[:5400] #reshape x_spec by Ziyan for testing, orginial shape was (11073, 32, 32)
 
     # need to take train/valid/test equally from each class
     trainx, remainx, trainy, remainy = train_test_split(
@@ -949,11 +969,11 @@ if __name__ == "__main__":
     # print("Running GBT tuning \n")
     # run_GBT()
 
-    # print("Running RF tuning \n")
-    # run_naive_rf()
+    print("Running RF tuning \n")
+    run_naive_rf()
 
-    # print("Running CNN32 tuning \n")
-    # run_cnn32()
+    print("Running CNN32 tuning \n")
+    run_cnn32()
 
     # print("Running CNN32_2l tuning \n")
     # run_cnn32_2l()
@@ -961,8 +981,8 @@ if __name__ == "__main__":
     # print("Running CNN32_5l tuning \n")
     # run_cnn32_5l()
 
-    print("Running Resnet tuning \n")
-    run_resnet18()
+    # print("Running Resnet tuning \n")
+    # run_resnet18()
     
 
 

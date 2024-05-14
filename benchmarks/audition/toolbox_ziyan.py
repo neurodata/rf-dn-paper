@@ -383,6 +383,7 @@ def run_gbt_image_set(
     # print(get_ece(test_probs, test_preds, test_labels_remapped))
     return (
         accuracy_score(test_labels_remapped, test_preds),
+        cohen_kappa_score(test_labels_remapped, test_preds),
         get_ece(test_probs, test_preds, test_labels_remapped),
         train_time,
         test_time,
