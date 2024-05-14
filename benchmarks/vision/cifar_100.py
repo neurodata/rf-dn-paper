@@ -113,17 +113,17 @@ def run_GBT():
         pickle.dump(gbt_model, f)
 
     print("gbt finished")
-    write_result(prefix + "gbt_acc.txt", gbt_acc)
-    write_result(prefix + "gbt_kappa.txt", gbt_kappa)
-    write_result(prefix + "gbt_ece.txt", gbt_ece)
-    write_result(prefix + "gbt_train_time.txt", gbt_train_time)
-    write_result(prefix + "gbt_test_time.txt", gbt_test_time)
-    write_result(prefix + "gbt_probs_labels.txt", gbt_probs_labels)
-    write_json(prefix + "gbt_acc.json", gbt_acc)
-    write_json(prefix + "gbt_kappa.json", gbt_kappa)
-    write_json(prefix + "gbt_ece.json", gbt_ece)
-    write_json(prefix + "gbt_train_time.json", gbt_train_time)
-    write_json(prefix + "gbt_test_time.json", gbt_test_time)
+    write_result(prefix + "gbt_acc_2hr.txt", gbt_acc)
+    write_result(prefix + "gbt_kappa_2hr.txt", gbt_kappa)
+    write_result(prefix + "gbt_ece_2hr.txt", gbt_ece)
+    write_result(prefix + "gbt_train_time_2hr.txt", gbt_train_time)
+    write_result(prefix + "gbt_test_time_2hr.txt", gbt_test_time)
+    write_result(prefix + "gbt_probs_labels_2hr.txt", gbt_probs_labels)
+    write_json(prefix + "gbt_acc_2hr.json", gbt_acc)
+    write_json(prefix + "gbt_kappa_2hr.json", gbt_kappa)
+    write_json(prefix + "gbt_ece_2hr.json", gbt_ece)
+    write_json(prefix + "gbt_train_time_2hr.json", gbt_train_time)
+    write_json(prefix + "gbt_test_time_2hr.json", gbt_test_time)
 
 def run_naive_rf():
     naive_rf_acc = []
@@ -254,7 +254,11 @@ def run_cnn32():
                 test_labels,
                 epochs=30,
                 lr=0.1,
+                batch=32,
                 optimizer_name="adam",
+                dampening=0,
+                momentum=0,
+                weight_decay=0,
             )
             cnn32_acc.append(acc)
             cnn32_kappa.append(cohen_kappa)
@@ -361,8 +365,12 @@ def run_cnn32_2l():
                 test_images,
                 test_labels,
                 epochs=30,
+                batch=32,
                 lr=0.1,
                 optimizer_name="adam",
+                dampening=0,
+                momentum=0,
+                weight_decay=0,
             )
             cnn32_2l_acc.append(acc)
             cnn32_2l_kappa.append(cohen_kappa)
@@ -470,8 +478,12 @@ def run_cnn32_5l():
                 test_images,
                 test_labels,
                 epochs=30,
+                batch=32,
                 lr=0.1,
                 optimizer_name="adam",
+                dampening=0,
+                momentum=0,
+                weight_decay=0,
             )
             cnn32_5l_acc.append(acc)
             cnn32_5l_kappa.append(cohen_kappa)
@@ -579,8 +591,12 @@ def run_resnet18():
                 test_images,
                 test_labels,
                 epochs=30,
+                batch=32,
                 lr=0.1,
                 optimizer_name="adam",
+                dampening=0,
+                momentum=0,
+                weight_decay=0,
             )
             resnet18_acc.append(acc)
             resnet18_kappa.append(cohen_kappa)
@@ -744,5 +760,5 @@ if __name__ == "__main__":
     # print("Running CNN32_5l tuning \n")
     # run_cnn32_5l()
 
-    print("Running Resnet18 tuning \n")
-    run_resnet18()
+    # print("Running Resnet18 tuning \n")
+    # run_resnet18()
