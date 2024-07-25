@@ -49,25 +49,39 @@ def run_GBT():
     storage_dict = {}
 
     for classes in classes_space:
+        print("classes: ", classes)
         # print(classes)
         d1 = {}
         # cohen_kappa vs num training samples (gbt)
         for samples in samples_space:
+            print("samples: ", samples)
             l3 = []
             # train data
             # print("init GBT model")
             gbt_model = xgb.XGBClassifier(
-                n_estimators=882,
-                max_depth=4,
-                learning_rate=0.01,
+                n_estimators=1045,
+                max_depth=14,
+                min_child_weight=6,
+                learning_rate=0.015531869905407784,
                 objective='multi:softprob',
                 seed=317,
-                min_child_weight=8,
-                colsample_bytree=0.6702264438270331,
-                colsample_bylevel=0.8006325564606935,
-                colsample_bynode=0.6063110478838847,
-                gamma=0.8146208192932376,
-                subsample=0.7185159768996707,
+                colsample_bytree=0.8658137268853405,
+                colsample_bylevel=0.5062758127741084,
+                colsample_bynode=0.4623908082630023,
+                gamma=0.5544812184195786,
+                subsample=0.765961974698761,
+
+
+                # colsample_bytree=0.6702264438270331,
+                # colsample_bylevel=0.8006325564606935,
+                # colsample_bynode=0.6063110478838847,
+                # gamma=0.11819655769629316,
+                # subsample=0.7185159768996707,
+                # n_estimators=773,
+                # max_depth=4,
+                # min_child_weight=8,
+                # learning_rate=0.24175598362284983,
+
             )
             acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_gbt_image_set(
                 gbt_model,
@@ -78,6 +92,8 @@ def run_GBT():
                 samples,
                 classes,
             )
+            print("Accuracy: ", acc)
+            print(" ")
             gbt_acc.append(acc)
             gbt_kappa.append(cohen_kappa)
             gbt_ece.append(ece)
@@ -113,17 +129,17 @@ def run_GBT():
         pickle.dump(gbt_model, f)
 
     print("gbt finished")
-    write_result(prefix + "gbt_acc_4hr.txt", gbt_acc)
-    write_result(prefix + "gbt_kappa_4hr.txt", gbt_kappa)
-    write_result(prefix + "gbt_ece_4hr.txt", gbt_ece)
-    write_result(prefix + "gbt_train_time_4hr.txt", gbt_train_time)
-    write_result(prefix + "gbt_test_time_4hr.txt", gbt_test_time)
-    write_result(prefix + "gbt_probs_labels_4hr.txt", gbt_probs_labels)
-    write_json(prefix + "gbt_acc_4hr.json", gbt_acc)
-    write_json(prefix + "gbt_kappa_4hr.json", gbt_kappa)
-    write_json(prefix + "gbt_ece_4hr.json", gbt_ece)
-    write_json(prefix + "gbt_train_time_4hr.json", gbt_train_time)
-    write_json(prefix + "gbt_test_time_4hr.json", gbt_test_time)
+    write_result(prefix + "gbt_acc_6hr.txt", gbt_acc)
+    write_result(prefix + "gbt_kappa_6hr.txt", gbt_kappa)
+    write_result(prefix + "gbt_ece_6hr.txt", gbt_ece)
+    write_result(prefix + "gbt_train_time_6hr.txt", gbt_train_time)
+    write_result(prefix + "gbt_test_time_6hr.txt", gbt_test_time)
+    write_result(prefix + "gbt_probs_labels_6hr.txt", gbt_probs_labels)
+    write_json(prefix + "gbt_acc_6hr.json", gbt_acc)
+    write_json(prefix + "gbt_kappa_6hr.json", gbt_kappa)
+    write_json(prefix + "gbt_ece_6hr.json", gbt_ece)
+    write_json(prefix + "gbt_train_time_6hr.json", gbt_train_time)
+    write_json(prefix + "gbt_test_time_6hr.json", gbt_test_time)
     
 
 def run_naive_rf():
@@ -136,11 +152,13 @@ def run_naive_rf():
     storage_dict = {}
 
     for classes in classes_space:
+        print("classes: ", classes)
         d1 = {}
         # cohen_kappa vs num training samples (naive_rf)
         for samples in samples_space:
+            print("samples: ", samples)
             l3 = []
-            RF = RandomForestClassifier(n_estimators=677, min_samples_leaf=4, min_samples_split=8,max_depth=17, criterion='gini', max_features="log2", max_samples=0.9157625421697316, n_jobs=-1, random_state=317)
+            RF = RandomForestClassifier(n_estimators=1038, min_samples_leaf=1, min_samples_split=3,max_depth=18, criterion='gini', max_features=None, max_samples=0.8070152333771876, n_jobs=-1, random_state=317)
             acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_rf_image_set(
                 RF,
                 cifar_train_images,
@@ -150,6 +168,8 @@ def run_naive_rf():
                 samples,
                 classes,
             )
+            print("Accuracy: ", acc)
+            print(" ")
             naive_rf_acc.append(acc)
             naive_rf_kappa.append(cohen_kappa)
             naive_rf_ece.append(ece)
@@ -197,18 +217,18 @@ def run_naive_rf():
         pickle.dump(RF, f)
 
     print("naive_rf finished")
-    write_result(prefix + "naive_rf_acc_4hr.txt", naive_rf_acc)
-    write_result(prefix + "naive_rf_kappa_4hr.txt", naive_rf_kappa)
-    write_result(prefix + "naive_rf_ece_4hr.txt", naive_rf_ece)
-    write_result(prefix + "naive_rf_train_time_4hr.txt", naive_rf_train_time)
-    write_result(prefix + "naive_rf_test_time_4hr.txt", naive_rf_test_time)
-    write_result(prefix + "naive_rf_probs_labels_4hr.txt", navie_rf_probs_labels)
-    write_json(prefix + "naive_rf_acc_4hr.json", naive_rf_acc)
-    write_json(prefix + "naive_rf_kappa_4hr.json", naive_rf_kappa)
-    write_json(prefix + "naive_rf_ece_4hr.json", naive_rf_ece)
-    write_json(prefix + "naive_rf_train_time_4hr.json", naive_rf_train_time)
-    write_json(prefix + "naive_rf_test_time_4hr.json", naive_rf_test_time)
-    write_json(prefix + "naive_rf_probs_labels_4hr.json", navie_rf_probs_labels)
+    write_result(prefix + "naive_rf_acc_6hr.txt", naive_rf_acc)
+    write_result(prefix + "naive_rf_kappa_6hr.txt", naive_rf_kappa)
+    write_result(prefix + "naive_rf_ece_6hr.txt", naive_rf_ece)
+    write_result(prefix + "naive_rf_train_time_6hr.txt", naive_rf_train_time)
+    write_result(prefix + "naive_rf_test_time_6hr.txt", naive_rf_test_time)
+    write_result(prefix + "naive_rf_probs_labels_6hr.txt", navie_rf_probs_labels)
+    write_json(prefix + "naive_rf_acc_6hr.json", naive_rf_acc)
+    write_json(prefix + "naive_rf_kappa_6hr.json", naive_rf_kappa)
+    write_json(prefix + "naive_rf_ece_6hr.json", naive_rf_ece)
+    write_json(prefix + "naive_rf_train_time_6hr.json", naive_rf_train_time)
+    write_json(prefix + "naive_rf_test_time_6hr.json", naive_rf_test_time)
+    write_json(prefix + "naive_rf_probs_labels_6hr.json", navie_rf_probs_labels)
 
 
 def run_cnn32():
@@ -221,17 +241,20 @@ def run_cnn32():
     storage_dict = {}
     for classes in classes_space:
         d1 = {}
+        print("classes:", classes)
         # cohen_kappa vs num training samples (cnn32)
         for samples in samples_space:
+            print("samples:", samples)
             l3 = []
             # train data
             # train_images, test_valid_images, train_labels, test_valid_labels = split_data(transform=data_transforms)
             # global train_images, test_valid_images, train_labels, test_valid_labels
 
-            cnn32_train_images = trainx.copy()
-            cnn32_train_labels = trainy.copy()
-            cnn32_test_valid_images = test_validx.copy()
-            cnn32_test_valid_labels = test_validy.copy()
+            cnn32_train_images = cifar_train_img.copy()
+            cnn32_train_labels = cifar_train_lab.copy()
+            cnn32_test_valid_images = cifar_test_img.copy()
+            cnn32_test_valid_labels = cifar_test_lab.copy()
+
             
             cnn32 = SimpleCNN32Filter(len(classes))
             (
@@ -253,14 +276,16 @@ def run_cnn32():
                 valid_labels,
                 test_images,
                 test_labels,
-                epochs=150,
-                batch=512,
-                lr=0.01082971516786632,
-                optimizer_name="sgd",
-                # dampening=0.5491409305748047,
-                # momentum=0.6995089592102491,
-                # weight_decay=0.0017561863934069644,
+                epochs=160,
+                batch=1013,
+                lr=0.00012048935640559353,
+                optimizer_name="adam",
+                # dampening=0.6591321889550715,
+                # momentum=0.9027870841688489,
+                weight_decay=0.009961335002167393,
             )
+            print("accuracy:", acc)
+            print(" ")
             cnn32_acc.append(acc)
             cnn32_kappa.append(cohen_kappa)
             cnn32_ece.append(ece)
@@ -311,18 +336,18 @@ def run_cnn32():
         pickle.dump(cnn32, f)
 
     print("cnn32 finished")
-    write_result(prefix + "cnn32_acc_6hr.txt", cnn32_acc)
-    write_result(prefix + "cnn32_kappa_6hr.txt", cnn32_kappa)
-    write_result(prefix + "cnn32_ece_6hr.txt", cnn32_ece)
-    write_result(prefix + "cnn32_train_time_6hr.txt", cnn32_train_time)
-    write_result(prefix + "cnn32_test_time_6hr.txt", cnn32_test_time)
-    write_result(prefix + "cnn32_probs_labels_6hr.txt", cnn32_probs_labels)
-    write_json(prefix + "cnn32_acc_6hr.json", cnn32_acc)
-    write_json(prefix + "cnn32_kappa_6hr.json", cnn32_kappa)
-    write_json(prefix + "cnn32_ece_6hr.json", cnn32_ece)
-    write_json(prefix + "cnn32_train_time_6hr.json", cnn32_train_time)
-    write_json(prefix + "cnn32_test_time_6hr.json", cnn32_test_time)
-    write_json(prefix + "cnn32_probs_labels_6hr.json", cnn32_probs_labels)
+    write_result(prefix + "cnn32_acc_2hr.txt", cnn32_acc)
+    write_result(prefix + "cnn32_kappa_2hr.txt", cnn32_kappa)
+    write_result(prefix + "cnn32_ece_2hr.txt", cnn32_ece)
+    write_result(prefix + "cnn32_train_time_2hr.txt", cnn32_train_time)
+    write_result(prefix + "cnn32_test_time_2hr.txt", cnn32_test_time)
+    write_result(prefix + "cnn32_probs_labels_2hr.txt", cnn32_probs_labels)
+    write_json(prefix + "cnn32_acc_2hr.json", cnn32_acc)
+    write_json(prefix + "cnn32_kappa_2hr.json", cnn32_kappa)
+    write_json(prefix + "cnn32_ece_2hr.json", cnn32_ece)
+    write_json(prefix + "cnn32_train_time_2hr.json", cnn32_train_time)
+    write_json(prefix + "cnn32_test_time_2hr.json", cnn32_test_time)
+    write_json(prefix + "cnn32_probs_labels_2hr.json", cnn32_probs_labels)
 
 
 def run_cnn32_2l():
@@ -334,10 +359,12 @@ def run_cnn32_2l():
     cnn32_2l_probs_labels = []
     storage_dict = {}
     for classes in classes_space:
+        print("classes:", classes)
         d1 = {}
 
         # cohen_kappa vs num training samples (cnn32_2l)
         for samples in samples_space:
+            print("samples:", samples)
             l3 = []
             # train data
             cnn32_2l_train_images = trainx.copy()
@@ -364,12 +391,16 @@ def run_cnn32_2l():
                 valid_labels,
                 test_images,
                 test_labels,
-                epochs=88,
-                batch=112,
-                lr=0.0013869861245357324,
+                epochs=162,
+                batch=16,
+                lr=0.00017042781035706246,
                 optimizer_name="adam",
-                weight_decay=0.011103525577197588,
+                # dampening=0.15737988780906453,
+                # momentum=0.7902936875443869,
+                # weight_decay=0.0016764535333438713,
             )
+            print("accuracy:", acc)
+            print(" ")
             cnn32_2l_acc.append(acc)
             cnn32_2l_kappa.append(cohen_kappa)
             cnn32_2l_ece.append(ece)
@@ -445,42 +476,47 @@ def run_cnn32_5l():
 
     for classes in classes_space:
         d1 = {}
-
+        print("classes:", classes)
         # cohen_kappa vs num training samples (cnn32_5l)
         for samples in samples_space:
+            print("samples:", samples)
             l3 = []
             # train data
-            cnn32_5l_train_images = trainx.copy()
-            cnn32_5l_train_labels = trainy.copy()
-            cnn32_5l_test_valid_images = test_validx.copy()
-            cnn32_5l_test_valid_labels = test_validy.copy()
+            cifar_trainset = datasets.CIFAR10(
+                root="./", train=True, download=True, transform=data_transforms
+            )
+            cifar_train_labels = np.array(cifar_trainset.targets)
 
-            # print("len(classes):", len(classes))
+            # test data
+            cifar_testset = datasets.CIFAR10(
+                root="./", train=False, download=True, transform=data_transforms
+            )
+            cifar_test_labels = np.array(cifar_testset.targets)
+
             cnn32_5l = SimpleCNN32Filter5Layers(len(classes))
-            (
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-            ) = prepare_data(
-                cnn32_5l_train_images, cnn32_5l_train_labels, cnn32_5l_test_valid_images, cnn32_5l_test_valid_labels, samples, classes
+            train_loader, valid_loader, test_loader = create_loaders_es(
+                cifar_train_labels,
+                cifar_test_labels,
+                classes,
+                cifar_trainset,
+                cifar_testset,
+                samples,
+                batch=17
             )
-            acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_es(
+            acc, cohen_kappa, ece, train_time, test_time, test_probs, test_labels, test_preds = run_dn_image_5l(
                 cnn32_5l,
-                train_images,
-                train_labels,
-                valid_images,
-                valid_labels,
-                test_images,
-                test_labels,
-                epochs=111,
-                batch=624,
-                lr=0.0013680095279726922,
+                train_loader,
+                valid_loader,
+                test_loader,
+                epochs=100,
+                lr=0.00013334064818344654,
                 optimizer_name="adam",
-                weight_decay=0.00015557749931887404,
+                # momentum=0.9,
+                weight_decay=0.07959524081808507,
+                # dampening=0,
             )
+            print("accuarcy:", acc)
+            print(" ")
             cnn32_5l_acc.append(acc)
             cnn32_5l_kappa.append(cohen_kappa)
             cnn32_5l_ece.append(ece)
@@ -489,7 +525,7 @@ def run_cnn32_5l():
 
             actual_test_labels = []
             for i in range(len(test_labels)):
-                actual_test_labels.append(int(classes[test_labels[i]]))
+                actual_test_labels.append(int(classes[int(test_labels[i])]))
 
             sorted_classes = sorted(classes)
             cnn32_5l_probs_labels.append("Classes:" + str(sorted_classes))
@@ -531,18 +567,18 @@ def run_cnn32_5l():
         pickle.dump(cnn32_5l, f)
 
     print("cnn32_5l finished")
-    write_result(prefix + "cnn32_5l_acc_2hr.txt", cnn32_5l_acc)
-    write_result(prefix + "cnn32_5l_kappa_2hr.txt", cnn32_5l_kappa)
-    write_result(prefix + "cnn32_5l_ece_2hr.txt", cnn32_5l_ece)
-    write_result(prefix + "cnn32_5l_train_time_2hr.txt", cnn32_5l_train_time)
-    write_result(prefix + "cnn32_5l_test_time_2hr.txt", cnn32_5l_test_time)
-    write_result(prefix + "cnn32_5l_probs_labels_2hr.txt", cnn32_5l_probs_labels)
-    write_json(prefix + "cnn32_5l_acc_2hr.json", cnn32_5l_acc)
-    write_json(prefix + "cnn32_5l_kappa_2hr.json", cnn32_5l_kappa)
-    write_json(prefix + "cnn32_5l_ece_2hr.json", cnn32_5l_ece)
-    write_json(prefix + "cnn32_5l_train_time_2hr.json", cnn32_5l_train_time)
-    write_json(prefix + "cnn32_5l_test_time_2hr.json", cnn32_5l_test_time)
-    write_json(prefix + "cnn32_5l_probs_labels_2hr.json", cnn32_5l_probs_labels)
+    write_result(prefix + "cnn32_5l_acc_6hr.txt", cnn32_5l_acc)
+    write_result(prefix + "cnn32_5l_kappa_6hr.txt", cnn32_5l_kappa)
+    write_result(prefix + "cnn32_5l_ece_6hr.txt", cnn32_5l_ece)
+    write_result(prefix + "cnn32_5l_train_time_6hr.txt", cnn32_5l_train_time)
+    write_result(prefix + "cnn32_5l_test_time_6hr.txt", cnn32_5l_test_time)
+    write_result(prefix + "cnn32_5l_probs_labels_6hr.txt", cnn32_5l_probs_labels)
+    write_json(prefix + "cnn32_5l_acc_6hr.json", cnn32_5l_acc)
+    write_json(prefix + "cnn32_5l_kappa_6hr.json", cnn32_5l_kappa)
+    write_json(prefix + "cnn32_5l_ece_6hr.json", cnn32_5l_ece)
+    write_json(prefix + "cnn32_5l_train_time_6hr.json", cnn32_5l_train_time)
+    write_json(prefix + "cnn32_5l_test_time_6hr.json", cnn32_5l_test_time)
+    write_json(prefix + "cnn32_5l_probs_labels_6hr.json", cnn32_5l_probs_labels)
 
 
 def run_resnet18():
@@ -554,15 +590,20 @@ def run_resnet18():
     resnet18_probs_labels = []
     storage_dict = {}
     for classes in classes_space:
+        print("classes:", classes)
         d1 = {}
         # cohen_kappa vs num training samples (resnet18)
         for samples in samples_space:
+            print("samples:", samples)
             l3 = []
             # train data
             res_train_images = trainx.copy()
             res_train_labels = trainy.copy()
-            res_test_valid_images = testx.copy()
-            res_test_valid_labels = testy.copy()
+            res_test_valid_images = test_validx.copy()
+            res_test_valid_labels = test_validy.copy()
+
+            total_images = images.copy()
+            total_labels = labels.copy()
 
 
             res = models.resnet18(pretrained=True)
@@ -586,14 +627,16 @@ def run_resnet18():
                 valid_labels,
                 test_images,
                 test_labels,
-                epochs=69,
-                batch=737,
-                lr=0.011423254155608374,
-                optimizer_name="sgd",
-                dampening=0.7911669785745563,
-                momentum=0.7664913525398744,
-                weight_decay=0.006859416411328701,
+                epochs=160,
+                batch=16,
+                lr=0.0008865001733821951,
+                optimizer_name="adam",
+                # dampening=0.8295654584238159,
+                # momentum=0.9666948703632617,
+                weight_decay=0.00024133293809938924,
             )
+            print("Accuracy:", acc)
+            print(" ")
             resnet18_acc.append(acc)
             resnet18_kappa.append(cohen_kappa)
             resnet18_ece.append(ece)
@@ -644,18 +687,18 @@ def run_resnet18():
         pickle.dump(res, f)
 
     print("resnet18 finished")
-    write_result(prefix + "resnet18_acc_2hr.txt", resnet18_acc)
-    write_result(prefix + "resnet18_kappa_2hr.txt", resnet18_kappa)
-    write_result(prefix + "resnet18_ece_2hr.txt", resnet18_ece)
-    write_result(prefix + "resnet18_train_time_2hr.txt", resnet18_train_time)
-    write_result(prefix + "resnet18_test_time_2hr.txt", resnet18_test_time)
-    write_result(prefix + "resnet18_probs_labels_2hr.txt", resnet18_probs_labels)
-    write_json(prefix + "resnet18_acc_2hr.json", resnet18_acc)
-    write_json(prefix + "resnet18_kappa_2hr.json", resnet18_kappa)
-    write_json(prefix + "resnet18_ece_2hr.json", resnet18_ece)
-    write_json(prefix + "resnet18_train_time_2hr.json", resnet18_train_time)
-    write_json(prefix + "resnet18_test_time_2hr.json", resnet18_test_time)
-    write_json(prefix + "resnet18_probs_labels_2hr.json", resnet18_probs_labels)
+    write_result(prefix + "resnet18_acc_6hr2.txt", resnet18_acc)
+    write_result(prefix + "resnet18_kappa_6hr2.txt", resnet18_kappa)
+    write_result(prefix + "resnet18_ece_6hr2.txt", resnet18_ece)
+    write_result(prefix + "resnet18_train_time_6hr2.txt", resnet18_train_time)
+    write_result(prefix + "resnet18_test_time_6hr2.txt", resnet18_test_time)
+    write_result(prefix + "resnet18_probs_labels_6hr2.txt", resnet18_probs_labels)
+    write_json(prefix + "resnet18_acc_6hr2.json", resnet18_acc)
+    write_json(prefix + "resnet18_kappa_6hr2.json", resnet18_kappa)
+    write_json(prefix + "resnet18_ece_6hr2.json", resnet18_ece)
+    write_json(prefix + "resnet18_train_time_6hr2.json", resnet18_train_time)
+    write_json(prefix + "resnet18_test_time_6hr2.json", resnet18_test_time)
+    write_json(prefix + "resnet18_probs_labels_6hr2.json", resnet18_probs_labels)
 
 
 if __name__ == "__main__":
@@ -686,9 +729,9 @@ if __name__ == "__main__":
     # )
 
     # For ResNet
-    # data_transforms = transforms.Compose(
-    #     [transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
-    # )
+    data_transforms = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+    )
 
     # data_transforms = transforms.Compose(
     #     [transforms.Resize((224, 224)), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
@@ -712,6 +755,11 @@ if __name__ == "__main__":
 
     # cifar_train_images = cifar_train_images.reshape(-1, 32 * 32 * 3)
     # cifar_test_images = cifar_test_images.reshape(-1, 32 * 32 * 3)
+
+    cifar_train_img = cifar_train_images.copy()
+    cifar_train_lab = cifar_train_labels.copy()
+    cifar_test_img = cifar_test_images.copy()
+    cifar_test_lab = cifar_test_labels.copy()
 
     # concatenate data
     images = np.concatenate((cifar_train_images, cifar_test_images))
@@ -739,13 +787,13 @@ if __name__ == "__main__":
     cifar_valid_images = valid_images.copy().reshape(-1, 32 * 32 * 3)
     cifar_valid_labels = valid_labels.copy()
 
-    trainx = train_images.copy().reshape(-1, 3, 32, 32)
+    trainx = train_images.copy()
     trainy = train_labels.copy()
-    testx = test_images.copy().reshape(-1, 3, 32, 32)
+    testx = test_images.copy()
     testy = test_labels.copy()
-    validx = valid_images.copy().reshape(-1, 3, 32, 32)
+    validx = valid_images.copy()
     validy = valid_labels.copy()
-    test_validx = test_valid_images.copy().reshape(-1, 3, 32, 32)
+    test_validx = test_valid_images.copy()
     test_validy = test_valid_labels.copy()
 
     print("train/test ratio after split:", len(trainx) / len(testx))
@@ -759,14 +807,14 @@ if __name__ == "__main__":
     # print("Running RF tuning \n")
     # run_naive_rf()
 
-    print("Running CNN32 tuning \n")
-    run_cnn32()
+    # print("Running CNN32 tuning \n")
+    # run_cnn32()
 
     # print("Running CNN32_2l tuning \n")
     # run_cnn32_2l()
 
-    # print("Running CNN32_5l tuning \n")
-    # run_cnn32_5l()
+    print("Running CNN32_5l tuning \n")
+    run_cnn32_5l()
 
     # print("Running Resnet18 tuning \n")
     # run_resnet18()

@@ -37,11 +37,11 @@ class SimpleCNN32Filter(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=10, stride=2)
-        self.fc1 = nn.Linear(144 * 32, num_classes)
+        self.fc1 = nn.Linear(12 * 32, num_classes)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        x = x.view(-1, 144 * 32)
+        x = x.reshape(-1, 144 * 32)
         x = self.fc1(x)
         return x
 
@@ -62,7 +62,7 @@ class SimpleCNN32Filter2Layers(nn.Module):
         b = x.shape[0]
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
-        x = x.view(b, -1)
+        x = x.reshape(b, -1)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
@@ -80,7 +80,7 @@ class SimpleCNN32Filter5Layers(nn.Module):
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.conv4 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
         self.conv5 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.fc1 = nn.Linear(8192, 200)
+        self.fc1 = nn.Linear(8 * 8 * 128, 200)
         self.fc2 = nn.Linear(200, num_classes)
         self.maxpool = nn.MaxPool2d((2, 2))
         self.bn = nn.BatchNorm2d(32)
@@ -96,7 +96,8 @@ class SimpleCNN32Filter5Layers(nn.Module):
         x = F.relu(self.bn2(self.conv4(x)))
         x = F.relu(self.bn3(self.conv5(x)))
         x = self.maxpool(x)
-        x = x.view(b, -1)
+        # x = F.avg_pool2d(x, kernel_size=4)
+        x = x.reshape(b, -1)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
@@ -281,6 +282,7 @@ def run_gbt_image_set(
     test_labels_remapped = np.vectorize(label_mapping.get)(test_labels)
     start_time = time.perf_counter()
     model.fit(train_images, train_labels_remapped)
+    # print("Finished 1 epoch")
     end_time = time.perf_counter()
     train_time = end_time - start_time
     # Test the model
@@ -374,132 +376,34 @@ def run_rf_image_set(
     )
 
 
-def run_dn_image_set(
-    model,
-    train_loader,
-    test_loader,
-    time_limit,
-    ratio,
-    lr=0.001,
-    batch=64,
-):
-    """
-    Peforms multiclass predictions for a deep network classifier
-    """
-    # define model
-    dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model.to(dev)
-    # loss and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
-
-    model.train()
-    start_time = time.perf_counter()
-    while True:  # loop over the dataset multiple times
-
-        for i, data in enumerate(train_loader, 0):
-            # get the inputs
-            inputs, labels = data
-            inputs = inputs.clone().detach().to(dev)
-            labels = labels.clone().detach().to(dev)
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-        end_time = time.perf_counter()
-        if (end_time - start_time) / ratio >= time_limit:
-            train_time = end_time - start_time
-            break
-
-    # test the model
-    model.eval()
-    first = True
-    prob_cal = nn.Softmax(dim=1)
-    start_time = time.perf_counter()
-    test_preds = []
-    test_labels = []
-    with torch.no_grad():
-        for data in test_loader:
-            images, labels = data
-            images = images.clone().detach().to(dev)
-            labels = labels.clone().detach().to(dev)
-            test_labels = np.concatenate((test_labels, labels.tolist()))
-
-            outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            test_preds = np.concatenate((test_preds, predicted.tolist()))
-
-            test_prob = prob_cal(outputs)
-            if first:
-                test_probs = test_prob.tolist()
-                first = False
-            else:
-                test_probs = np.concatenate((test_probs, test_prob.tolist()))
-
-    end_time = time.perf_counter()
-    test_time = end_time - start_time
-    return (
-        cohen_kappa_score(test_preds, test_labels),
-        get_ece(test_probs, test_preds, test_labels),
-        train_time,
-        test_time,
-    )
-
-
-# def run_dn_image_es(
+# def run_dn_image_set(
 #     model,
 #     train_loader,
-#     valid_loader,
 #     test_loader,
-#     epochs=30,
-#     lr=0.1,
-#     criterion=nn.CrossEntropyLoss(),
-#     optimizer_name="adam",
-#     momentum=0,
-#     weight_decay=0,
-#     dampening=0,
+#     time_limit,
+#     ratio,
+#     lr=0.001,
+#     batch=64,
 # ):
 #     """
-#     Peforms multiclass predictions for a deep network classifier with set number
-#     of samples and early stopping
+#     Peforms multiclass predictions for a deep network classifier
 #     """
 #     # define model
 #     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 #     model.to(dev)
 #     # loss and optimizer
-#     # criterion = nn.CrossEntropyLoss()
+#     criterion = nn.CrossEntropyLoss()
+#     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
 
-#     # define optimizer
-#     if optimizer_name == 'sgd':
-#         optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay, dampening=dampening)
-#     elif optimizer_name == 'adam':
-#         optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-#     else:
-#         raise ValueError(f"Unknown optimizer: {optimizer_name}")
-    
-#     # early stopping setup
-#     prev_loss = float("inf")
-#     flag = 0
-
+#     model.train()
 #     start_time = time.perf_counter()
-#     for epoch in range(epochs):  # loop over the dataset multiple times
-#         model.train()
+#     while True:  # loop over the dataset multiple times
+
 #         for i, data in enumerate(train_loader, 0):
 #             # get the inputs
-#             print("Here1")
-#             print(data)
 #             inputs, labels = data
 #             inputs = inputs.clone().detach().to(dev)
 #             labels = labels.clone().detach().to(dev)
-
-#             # inputs = train_data[i : i + batch].to(dev)
-#             # labels = train_labels[i : i + batch].to(dev)
-
 #             # zero the parameter gradients
 #             optimizer.zero_grad()
 
@@ -509,33 +413,10 @@ def run_dn_image_set(
 #             loss.backward()
 #             optimizer.step()
 
-#         # test generalization error for early stopping
-#         model.eval()
-#         cur_loss = 0
-#         with torch.no_grad():
-#             for i, data in enumerate(valid_loader, 0):
-#                 # get the inputs
-#                 print("Here2")
-#                 print(data)
-#                 inputs, labels = data
-#                 inputs = inputs.clone().detach().to(dev)
-#                 labels = labels.clone().detach().to(dev)
-
-#                 # forward
-#                 outputs = model(inputs)
-#                 loss = criterion(outputs, labels)
-#                 cur_loss += loss
-#         # early stop if 3 epochs in a row no loss decrease
-#         if cur_loss < prev_loss:
-#             prev_loss = cur_loss
-#             flag = 0
-#         else:
-#             flag += 1
-#             if flag >= 3:
-#                 print("early stopped at epoch: ", epoch)
-#                 break
-#     end_time = time.perf_counter()
-#     train_time = end_time - start_time
+#         end_time = time.perf_counter()
+#         if (end_time - start_time) / ratio >= time_limit:
+#             train_time = end_time - start_time
+#             break
 
 #     # test the model
 #     model.eval()
@@ -557,7 +438,7 @@ def run_dn_image_set(
 
 #             test_prob = prob_cal(outputs)
 #             if first:
-#                 test_probs = np.array(test_prob)
+#                 test_probs = test_prob.tolist()
 #                 first = False
 #             else:
 #                 test_probs = np.concatenate((test_probs, test_prob.tolist()))
@@ -565,15 +446,139 @@ def run_dn_image_set(
 #     end_time = time.perf_counter()
 #     test_time = end_time - start_time
 #     return (
-#         accuracy_score(test_preds, test_labels),
 #         cohen_kappa_score(test_preds, test_labels),
 #         get_ece(test_probs, test_preds, test_labels),
 #         train_time,
 #         test_time,
-#         test_probs,
-#         test_labels,
-#         test_preds
 #     )
+
+
+def run_dn_image_5l(
+    model,
+    train_loader,
+    valid_loader,
+    test_loader,
+    epochs=30,
+    lr=0.1,
+    criterion=nn.CrossEntropyLoss(),
+    optimizer_name="sgd",
+    momentum=0.9,
+    weight_decay=0,
+    dampening=0,
+):
+    """
+    Peforms multiclass predictions for a deep network classifier with set number
+    of samples and early stopping
+    """
+    # define model
+    dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(dev)
+    # loss and optimizer
+    # criterion = nn.CrossEntropyLoss()
+
+    # define optimizer
+    if optimizer_name == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay, dampening=dampening)
+    elif optimizer_name == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    else:
+        raise ValueError(f"Unknown optimizer: {optimizer_name}")
+    
+    # early stopping setup
+    prev_loss = float("inf")
+    flag = 0
+
+    start_time = time.perf_counter()
+    for epoch in range(epochs):  # loop over the dataset multiple times
+        model.train()
+        for i, data in enumerate(train_loader, 0):
+            # get the inputs
+            # print("Here1")
+            # print(data)
+            inputs, labels = data
+            inputs = inputs.clone().detach().to(dev)
+            labels = labels.clone().detach().to(dev)
+
+            # inputs = train_data[i : i + batch].to(dev)
+            # labels = train_labels[i : i + batch].to(dev)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+        # test generalization error for early stopping
+        model.eval()
+        cur_loss = 0
+        with torch.no_grad():
+            for i, data in enumerate(valid_loader, 0):
+                # get the inputs
+                # print("Here2")
+                # print(data)
+                inputs, labels = data
+                inputs = inputs.clone().detach().to(dev)
+                labels = labels.clone().detach().to(dev)
+
+                # forward
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                cur_loss += loss
+        # early stop if 3 epochs in a row no loss decrease
+        if cur_loss < prev_loss:
+            prev_loss = cur_loss
+            flag = 0
+        else:
+            flag += 1
+            if flag >= 5:
+                print("early stopped at epoch: ", epoch)
+                break
+        if epoch == epochs-1:
+            print("No early stop: ", epoch+1)
+
+    end_time = time.perf_counter()
+    train_time = end_time - start_time
+
+    # test the model
+    model.eval()
+    first = True
+    prob_cal = nn.Softmax(dim=1)
+    start_time = time.perf_counter()
+    test_preds = []
+    test_labels = []
+    with torch.no_grad():
+        for data in test_loader:
+            images, labels = data
+            images = images.clone().detach().to(dev)
+            labels = labels.clone().detach().to(dev)
+            test_labels = np.concatenate((test_labels, labels.tolist()))
+
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            test_preds = np.concatenate((test_preds, predicted.tolist()))
+
+            test_prob = prob_cal(outputs)
+            if first:
+                test_probs = np.array(test_prob)
+                first = False
+            else:
+                test_probs = np.concatenate((test_probs, test_prob.tolist()))
+
+    end_time = time.perf_counter()
+    test_time = end_time - start_time
+    return (
+        accuracy_score(test_preds, test_labels),
+        cohen_kappa_score(test_preds, test_labels),
+        get_ece(test_probs, test_preds, test_labels),
+        train_time,
+        test_time,
+        test_probs,
+        test_labels,
+        test_preds
+    )
 
 def run_dn_image_es(
     model,
@@ -587,8 +592,8 @@ def run_dn_image_es(
     lr=0.1,
     batch=60,
     criterion=nn.CrossEntropyLoss(),
-    optimizer_name="adam",
-    momentum=0,
+    optimizer_name="sgd",
+    momentum=0.9,
     weight_decay=0,
     dampening=0,
 ):
@@ -616,7 +621,7 @@ def run_dn_image_es(
         model.train()
         for i in range(0, len(train_data), batch):
             # get the inputs
-            inputs = train_data[i : i + batch].to(dev)
+            inputs = train_data[i : i + batch].permute(0, 3, 1, 2).to(dev)
             labels = train_labels[i : i + batch].to(dev)
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -639,7 +644,7 @@ def run_dn_image_es(
         with torch.no_grad():
             for i in range(0, len(valid_data), batch):
                 # get the inputs
-                inputs = valid_data[i : i + batch].to(dev)
+                inputs = valid_data[i : i + batch].permute(0, 3, 1, 2).to(dev)
                 labels = valid_labels[i : i + batch].to(dev)
                 if inputs.shape[0] == 1:
                     inputs = torch.cat((inputs, inputs, inputs), dim = 0)
@@ -655,11 +660,12 @@ def run_dn_image_es(
             flag = 0
         else:
             flag += 1
-            if flag >= 3:
+            if flag >= 5:
                 print("early stopped at epoch: ", epoch)
                 break
+        if epoch == epochs-1:
+            print("No early stop: ", epoch)
 
-        # print("epoch: ", epoch)
     end_time = time.perf_counter()
     train_time = end_time - start_time
 
@@ -670,7 +676,7 @@ def run_dn_image_es(
     test_preds = []
     with torch.no_grad():
         for i in range(0, len(test_data), batch):
-            inputs = test_data[i : i + batch].to(dev)
+            inputs = test_data[i : i + batch].permute(0, 3, 1, 2).to(dev)
             labels = test_labels[i : i + batch].to(dev)
 
             outputs = model(inputs)
@@ -698,60 +704,60 @@ def run_dn_image_es(
     )
 
 
-def create_loaders_set(
-    train_labels, test_labels, classes, trainset, testset, samples, batch=64
-):
-    """
-    Creates training and testing loaders with fixed total samples
-    """
-    classes = np.array(list(classes))
-    num_classes = len(classes)
-    partitions = np.array_split(np.array(range(samples)), num_classes)
+# def create_loaders_set(
+#     train_labels, test_labels, classes, trainset, testset, samples, batch=64
+# ):
+#     """
+#     Creates training and testing loaders with fixed total samples
+#     """
+#     classes = np.array(list(classes))
+#     num_classes = len(classes)
+#     partitions = np.array_split(np.array(range(samples)), num_classes)
 
-    # get indicies of classes we want
-    class_idxs = []
-    i = 0
-    for cls in classes:
-        class_idx = np.argwhere(train_labels == cls).flatten()
-        np.random.shuffle(class_idx)
-        class_idx = class_idx[: len(partitions[i])]
-        class_idxs.append(class_idx)
-        i += 1
+#     # get indicies of classes we want
+#     class_idxs = []
+#     i = 0
+#     for cls in classes:
+#         class_idx = np.argwhere(train_labels == cls).flatten()
+#         np.random.shuffle(class_idx)
+#         class_idx = class_idx[: len(partitions[i])]
+#         class_idxs.append(class_idx)
+#         i += 1
 
-    np.random.shuffle(class_idxs)
+#     np.random.shuffle(class_idxs)
 
-    train_idxs = np.concatenate(class_idxs)
-    # change the labels to be from 0-len(classes)
-    for i in train_idxs:
-        trainset.targets[i] = np.where(classes == trainset.targets[i])[0][0]
+#     train_idxs = np.concatenate(class_idxs)
+#     # change the labels to be from 0-len(classes)
+#     for i in train_idxs:
+#         trainset.targets[i] = np.where(classes == trainset.targets[i])[0][0]
 
-    train_sampler = torch.utils.data.sampler.SubsetRandomSampler(train_idxs)
-    train_loader = torch.utils.data.DataLoader(
-        trainset, batch_size=batch, num_workers=4, sampler=train_sampler, drop_last=True
-    )
+#     train_sampler = torch.utils.data.sampler.SubsetRandomSampler(train_idxs)
+#     train_loader = torch.utils.data.DataLoader(
+#         trainset, batch_size=batch, num_workers=4, sampler=train_sampler, drop_last=True
+#     )
 
-    # get indicies of classes we want
-    test_idxs = []
-    for cls in classes:
-        test_idx = np.argwhere(test_labels == cls).flatten()
-        test_idxs.append(test_idx)
+#     # get indicies of classes we want
+#     test_idxs = []
+#     for cls in classes:
+#         test_idx = np.argwhere(test_labels == cls).flatten()
+#         test_idxs.append(test_idx)
 
-    test_idxs = np.concatenate(test_idxs)
+#     test_idxs = np.concatenate(test_idxs)
 
-    # change the labels to be from 0-len(classes)
-    for i in test_idxs:
-        testset.targets[i] = np.where(classes == testset.targets[i])[0][0]
+#     # change the labels to be from 0-len(classes)
+#     for i in test_idxs:
+#         testset.targets[i] = np.where(classes == testset.targets[i])[0][0]
 
-    test_sampler = torch.utils.data.sampler.SubsetRandomSampler(test_idxs)
-    test_loader = torch.utils.data.DataLoader(
-        testset,
-        batch_size=batch,
-        shuffle=False,
-        num_workers=4,
-        sampler=test_sampler,
-        drop_last=True,
-    )
-    return train_loader, test_loader
+#     test_sampler = torch.utils.data.sampler.SubsetRandomSampler(test_idxs)
+#     test_loader = torch.utils.data.DataLoader(
+#         testset,
+#         batch_size=batch,
+#         shuffle=False,
+#         num_workers=4,
+#         sampler=test_sampler,
+#         drop_last=True,
+#     )
+#     return train_loader, test_loader
 
 
 def create_loaders_es(
@@ -872,6 +878,9 @@ def prepare_data(
     valid_labels = torch.LongTensor(test_labels[validation_idxs])
     test_images = torch.FloatTensor(test_images[test_idxs])
     test_labels = torch.LongTensor(test_labels[test_idxs])
+    # print("train_images", train_images.shape)
+    # print("test_images", test_images.shape)
+    # print("valid_images", valid_images.shape)
     return (
         train_images,
         train_labels,
@@ -880,3 +889,60 @@ def prepare_data(
         test_images,
         test_labels,
     )
+
+
+# def prepare_data(
+#     images, labels, samples, classes
+# ):
+
+#     classes = np.array(list(classes))
+#     num_classes = len(classes)
+#     total_samples = len(labels)
+#     # print("samples", samples)
+#     # print("total_samples", total_samples)
+    
+#     # train_size = total_samples * 2 // 4
+#     # valid_size = total_samples // 4
+#     # test_size = total_samples // 4
+
+#     class_idxs = []
+#     for cls in classes:
+#         class_idx = np.argwhere(labels == cls).flatten()
+#         np.random.shuffle(class_idx)
+#         class_idx = class_idx[:samples*2 // num_classes]
+#         class_idxs.append(class_idx)
+    
+#     all_idxs = np.concatenate(class_idxs)
+#     np.random.shuffle(all_idxs)
+#     # print("all_idxs", len(all_idxs))
+#     train_idxs = all_idxs[:len(all_idxs) * 2 // 4]
+#     valid_idxs = all_idxs[len(all_idxs) * 2 // 4:len(all_idxs) * 3 // 4]
+#     test_idxs = all_idxs[len(all_idxs) * 3 // 4:]
+
+#     for i in train_idxs:
+#         labels[i] = np.where(classes == labels[i])[0][0]
+#     for i in valid_idxs:
+#         labels[i] = np.where(classes == labels[i])[0][0]
+#     for i in test_idxs:
+#         labels[i] = np.where(classes == labels[i])[0][0]
+
+#     train_images = torch.FloatTensor(images[train_idxs])
+#     train_labels = torch.LongTensor(labels[train_idxs])
+#     valid_images = torch.FloatTensor(images[valid_idxs])
+#     valid_labels = torch.LongTensor(labels[valid_idxs])
+#     test_images = torch.FloatTensor(images[test_idxs])
+#     test_labels = torch.LongTensor(labels[test_idxs])
+#     print("samples", samples)
+#     # print("train_images", train_images.shape)
+#     # print("test_images", test_images.shape)
+#     # print("valid_images", valid_images.shape)
+    
+#     return (
+#         train_images,
+#         train_labels,
+#         valid_images,
+#         valid_labels,
+#         test_images,
+#         test_labels,
+#     )
+
