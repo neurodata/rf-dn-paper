@@ -7,6 +7,7 @@ Coauthors: Michael Ainsworth
 
 
 import numpy as np
+import pandas as pd
 from random import sample
 from sklearn.ensemble import RandomForestClassifier
 from pytorch_tabnet.tab_model import TabNetClassifier
@@ -15,7 +16,18 @@ import openml
 import json
 from os.path import exists
 from sklearn.model_selection import RandomizedSearchCV
+import warnings
+warnings.filterwarnings("ignore")
 
+def convert_ndarray_to_list(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {k: convert_ndarray_to_list(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_ndarray_to_list(i) for i in obj]
+    else:
+        return obj
 
 def random_sample_new(
     X_train,
@@ -79,14 +91,22 @@ def random_sample_new(
     return final_inds
 
 
+# def sample_large_datasets(X_data, y_data, max_size=10000):
+#     """
+#     For large datasets with over 10000 samples, resample the data to only include
+#     10000 random samples.
+#     """
+#     inds = [i for i in range(X_data.shape[0])]
+#     fin = sorted(sample(inds, max_size))
+#     return X_data[fin], y_data[fin]
+
 def sample_large_datasets(X_data, y_data, max_size=10000):
     """
     For large datasets with over 10000 samples, resample the data to only include
-    10000 random samples.
+    10000 random samples. Modified by Ziyan.
     """
-    inds = [i for i in range(X_data.shape[0])]
-    fin = sorted(sample(inds, max_size))
-    return X_data[fin], y_data[fin]
+    inds = np.random.choice(X_data.index, size=max_size, replace=False)
+    return X_data.iloc[inds], y_data.iloc[inds]
 
 
 def save_best_parameters(
@@ -100,7 +120,7 @@ def save_best_parameters(
             dictionary = json.load(json_file)
         best_parameters_to_save = {**dictionary, **best_parameters}
     else:
-        best_parameters_to_save = best_parameters
+        best_parameters_to_save = convert_ndarray_to_list(best_parameters)
     with open(path_save + ".json", "w") as fp:
         json.dump(best_parameters_to_save, fp)
 
@@ -181,7 +201,9 @@ def do_calcs_per_model(
     all_parameters[model_name][dataset_index] = parameters
     best_parameters[model_name][dataset_index] = clf.best_params_
     all_params[model_name][dataset_index] = clf.cv_results_["params"]
-    return all_parameters, best_parameters, all_params
+    train_accuracy = clf.score(X[train_indices], y[train_indices])
+    val_accuracy = clf.score(X[val_indices], y[val_indices])
+    return all_parameters, best_parameters, all_params, train_accuracy, val_accuracy
 
 
 def load_cc18():
@@ -195,12 +217,13 @@ def load_cc18():
     for data_id in openml.study.get_suite("OpenML-CC18").data:
         try:
             successfully_loaded = True
-            dataset = openml.datasets.get_dataset(data_id)
+            dataset = openml.datasets.get_dataset(data_id, download_data=True, download_qualities=True, download_features_meta_data=True)
             dataset_name.append(dataset.name)
             X, y, is_categorical, _ = dataset.get_data(
-                dataset_format="array", target=dataset.default_target_attribute
+                dataset_format="dataframe", target=dataset.default_target_attribute
             )
             _, y = np.unique(y, return_inverse=True)
+            X = X.to_numpy() 
             X = np.nan_to_num(X)
         except TypeError:
             successfully_loaded = False
@@ -209,6 +232,8 @@ def load_cc18():
             y_data_list.append(y)
 
     return X_data_list, y_data_list, dataset_name
+
+# def import_datasets
 
 
 def return_to_default():
@@ -240,7 +265,7 @@ def save_vars_to_dict(
     max_shape_to_run=10000,
     alpha_range_nn=[0.1],
     subsample=[1.0],
-    path_to_save="metrics/dict_parameters.json",
+    path_to_save="metrics/dict_parameters_test.json",
     shape_2_evolution=1,
     shape_2_all_sample_sizes=8,
 ):
@@ -301,7 +326,7 @@ def mod_dict(res_dict, type_to_compare):
     return tot_dict
 
 
-def read_params_dict_json(path="metrics/cc18_all_parameters", type_file=".json"):
+def read_params_dict_json(path="metrics/cc18_all_parameters_test", type_file=".json"):
     """
     Read optimized parameters as saved in a dict
     Path should not include the file type (like .json)
@@ -348,12 +373,16 @@ def find_indices_train_val_test(
     dict_data_indices={},
     dataset_ind=0,
 ):
-    ratio_base = [int(el) for el in np.linspace(0, X_shape, np.sum(ratio) + 1)]
-    ratio_base_limits = np.hstack([[0], ratio_base[np.cumsum(ratio)]])
+    ratio = np.array(ratio)
+    ratio_base = np.linspace(0, X_shape, np.sum(ratio) + 1)
+    ratio_base = ratio_base.astype(int)
+    ratio_base_limits = [0] + ratio_base[np.cumsum(ratio)[:-1]].tolist()
     list_indices = np.arange(X_shape)
     np.random.shuffle(list_indices)
+    dict_data_indices[dataset_ind] = {}
     for ind_counter, ind_min in enumerate(ratio_base_limits[:-1]):
         ind_max = ratio_base_limits[ind_counter + 1]
         cur_indices = list_indices[ind_min:ind_max]
         dict_data_indices[dataset_ind][keys_types[ind_counter]] = cur_indices
+    
     return dict_data_indices
