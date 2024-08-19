@@ -14,8 +14,10 @@ from pytorch_tabnet.tab_model import TabNetClassifier
 import xgboost as xgb
 import openml
 import json
+import os
 from os.path import exists
 from sklearn.model_selection import RandomizedSearchCV
+import torch
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -28,6 +30,12 @@ def convert_ndarray_to_list(obj):
         return [convert_ndarray_to_list(i) for i in obj]
     else:
         return obj
+
+def write_json(filename, result):
+    """Writes results to JSON files"""
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w') as json_file:
+        json.dump(result, json_file)
 
 def random_sample_new(
     X_train,
@@ -190,12 +198,14 @@ def do_calcs_per_model(
     model = classifiers[model_name]
     varCVmodel = varCV[model_name]
     parameters = create_parameters(model_name, varargin, p)
+    print("Parameters: ", parameters)
     clf = RandomizedSearchCV(
         model,
         parameters,
         n_jobs=varCVmodel["n_jobs"],
         cv=[(train_indices, val_indices)],
         verbose=varCVmodel["verbose"],
+        scoring='accuracy',
     )
     clf.fit(X, y)
     all_parameters[model_name][dataset_index] = parameters
@@ -233,7 +243,29 @@ def load_cc18():
 
     return X_data_list, y_data_list, dataset_name
 
-# def import_datasets
+def import_datasets(id_list):
+    """
+    Import datasets
+    """
+    X_data_list = []
+    y_data_list = []
+    dataset_name = []
+
+    # SUITE_ID = [334, 335, 336, 337]
+    for i in id_list:
+        benchmark_suite = openml.study.get_suite(i)
+        for task_id in benchmark_suite.tasks:  # iterate over all tasks
+            task = openml.tasks.get_task(task_id)  # download the OpenML task
+            dataset = task.get_dataset()
+            X, y, categorical_indicator, attribute_names = dataset.get_data(
+                dataset_format="dataframe", target=dataset.default_target_attribute
+            )   
+            X_data_list.append(X)
+            y_data_list.append(y)
+            dataset_name.append(dataset.name)
+
+    return X_data_list, y_data_list, dataset_name
+
 
 
 def return_to_default():
@@ -376,7 +408,7 @@ def find_indices_train_val_test(
     ratio = np.array(ratio)
     ratio_base = np.linspace(0, X_shape, np.sum(ratio) + 1)
     ratio_base = ratio_base.astype(int)
-    ratio_base_limits = [0] + ratio_base[np.cumsum(ratio)[:-1]].tolist()
+    ratio_base_limits = [0] + ratio_base[np.cumsum(ratio)].tolist()
     list_indices = np.arange(X_shape)
     np.random.shuffle(list_indices)
     dict_data_indices[dataset_ind] = {}
