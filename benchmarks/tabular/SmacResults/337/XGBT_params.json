@@ -1,0 +1,178 @@
+{
+    "credit": {
+        "colsample_bylevel": 0.5769863646115069,
+        "colsample_bynode": 0.691598607701434,
+        "colsample_bytree": 0.9815241821544787,
+        "gamma": 0.10578616725694505,
+        "learning_rate": 0.29900106848414437,
+        "max_depth": 15,
+        "min_child_weight": 1,
+        "n_estimators": 1178,
+        "subsample": 0.5528029546027771
+    },
+    "electricity": {
+        "colsample_bylevel": 0.7494922929307553,
+        "colsample_bynode": 0.9672816202578483,
+        "colsample_bytree": 0.9926809820191866,
+        "gamma": 0.1258963345187032,
+        "learning_rate": 0.29093222034419314,
+        "max_depth": 14,
+        "min_child_weight": 2,
+        "n_estimators": 668,
+        "subsample": 0.5061734503247618
+    },
+    "covertype": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "pol": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "house_16H": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "MagicTelescope": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.7521258791466592,
+        "colsample_bytree": 0.8542075266578653,
+        "gamma": 0.17841636973138664,
+        "learning_rate": 0.2936068843275964,
+        "max_depth": 14,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "bank-marketing": {
+        "colsample_bylevel": 0.6955374510819221,
+        "colsample_bynode": 0.7888812819253941,
+        "colsample_bytree": 0.9831252312682732,
+        "gamma": 0.17967065405771712,
+        "learning_rate": 0.288286470319058,
+        "max_depth": 13,
+        "min_child_weight": 4,
+        "n_estimators": 973,
+        "subsample": 0.6895611261844651
+    },
+    "MiniBooNE": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "Higgs": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "eye_movements": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "Diabetes130US": {
+        "colsample_bylevel": 0.9894341392008958,
+        "colsample_bynode": 0.8226614035053963,
+        "colsample_bytree": 0.8997205436920921,
+        "gamma": 0.10887743482400186,
+        "learning_rate": 0.2980760542574607,
+        "max_depth": 15,
+        "min_child_weight": 1,
+        "n_estimators": 1033,
+        "subsample": 0.5991792628728804
+    },
+    "jannis": {
+        "colsample_bylevel": 0.9215944037177319,
+        "colsample_bynode": 0.6863852346036332,
+        "colsample_bytree": 0.6806445960659839,
+        "gamma": 0.754748753517038,
+        "learning_rate": 0.2407834993066661,
+        "max_depth": 14,
+        "min_child_weight": 3,
+        "n_estimators": 447,
+        "subsample": 0.7680672031886383
+    },
+    "default-of-credit-card-clients": {
+        "colsample_bylevel": 0.6837723551843583,
+        "colsample_bynode": 0.9450825936770977,
+        "colsample_bytree": 0.9855952251230407,
+        "gamma": 0.13054295786393022,
+        "learning_rate": 0.25726211169208346,
+        "max_depth": 18,
+        "min_child_weight": 1,
+        "n_estimators": 886,
+        "subsample": 0.6540014535355404
+    },
+    "Bioresponse": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "california": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "heloc": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    }
+}
