@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 
 # parameters 
-dataset_indices_max = 7
+dataset_indices_max = 16
 max_shape_to_run = 10000
 alpha_range_nn = [0.001, 0.01, 0.1]
 subsample = [0.5, 0.8, 1.0]
@@ -24,40 +24,45 @@ dict_data_indices = {dataset_ind: {} for dataset_ind in dataset_indices}
 prefix = "new_results"
 
 # Load data
-SUITE_ID = [334]
+SUITE_ID = [337]
 X_data_list, y_data_list, dataset_name = import_datasets(SUITE_ID)
 
-RF = 0
-XGBT = 0
-DN = 1
+RF = 1
+XGBT = 1
+DN = 0
 
 def load_params(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
 
 
-path_rf = "SmacResults/RF_params.json"
-path_xgbt = "SmacResults/XGBT_params.json"
-path_tab = "SmacResults/Tab_params.json"
+path_rf = "SmacResults/337/RF_params.json"
+path_xgbt = "SmacResults/337/XGBT_params.json"
+# path_tab = "SmacResults/337/Tab_params.json"
 
 params_rf = load_params(path_rf)
 params_xgbt = load_params(path_xgbt)
-params_tab = load_params(path_tab)
-
-# print(len(params_rf))
-# print(len(params_xgbt))
-# print(len(params_tab))
+# params_tab = load_params(path_tab)
 
 for dataset_index, dataset in enumerate(dataset_indices):
-    print("\n\nCurrent Dataset: ", dataset)
+    # if dataset == 2:
+    print("\n\nCurrent Dataset: ", dataset, dataset_name[dataset_index])
 
     X = X_data_list[dataset]
     y = y_data_list[dataset]
 
-    # If data set has over 10000 samples, resample to contain 10000
+    # If the dataset has over 10000 samples, resample it to contain only 10000
     if X.shape[0] > max_shape_to_run:
         X, y = sample_large_datasets(X, y)
-    
+
+    # Convert labels to numerical values before splitting
+    le = LabelEncoder()
+    y_encoded = le.fit_transform(y)
+
+    # print("Unique labels in the dataset:", np.unique(y_encoded))
+    # print("length of the dataset:", len(y_encoded))
+    # print("length of unique labels in the dataset:", len(np.unique(y_encoded)))
+
     np.random.seed(dataset_index)
     dict_data_indices = find_indices_train_val_test(
         X.shape[0], dict_data_indices=dict_data_indices, dataset_ind=dataset_index
@@ -67,12 +72,6 @@ for dataset_index, dataset in enumerate(dataset_indices):
     val_indices = dict_data_indices[dataset_index]["val"]
     test_indices = dict_data_indices[dataset_index]["test"]
 
-    ### Covert labels to numerical values
-    le = LabelEncoder()
-    y_encoded = le.fit_transform(y)
-    # y = pd.DataFrame(y_encoded)
-    y = y_encoded
-
     if isinstance(X, np.ndarray):
         X = pd.DataFrame(X)
     categorical_columns = X.select_dtypes(include=['object']).columns
@@ -81,29 +80,42 @@ for dataset_index, dataset in enumerate(dataset_indices):
     encoder = OneHotEncoder(sparse_output=False)
     if len(categorical_columns) > 0:
         X_encoded_strings = encoder.fit_transform(X[categorical_columns])
-
         X = np.hstack((X[numeric_columns].values, X_encoded_strings))
         print("Encoded", len(categorical_columns), " columns")
-        encode_cnt += 1
-    # else:
-    #     print("No string columns to encode")
 
     scaler = StandardScaler()
     scaler.fit(X)
     X = scaler.transform(X)
 
     X_train = X[train_indices]
-    y_train = y[train_indices]
+    y_train = y_encoded[train_indices]
     X_val = X[val_indices]
-    y_val = y[val_indices]
+    y_val = y_encoded[val_indices]
     X_test = X[test_indices]
-    y_test = y[test_indices]
+    y_test = y_encoded[test_indices]
+
+    # print("Shape of X_train:", X_train.shape)
+    # print("Shape of y_train:", y_train.shape)
+
+    # # print("Unique labels in training set:", np.unique(y_train))
+    # # print("length of training set:", len(y_train))
+    # print("length of unique labels in training set:", len(np.unique(y_train)))
+    # # print("Unique labels in validation set:", np.unique(y_val))
+    # # print("length of validation set:", len(y_val))
+    # print("length of unique labels in validation set:", len(np.unique(y_val)))
+    # # print("Unique labels in test set:", np.unique(y_test))
+    # # print("length of test set:", len(y_test))
+    # print("length of unique labels in test set:", len(np.unique(y_test)))
+
+    
 
     if RF == 1:
         print("\n Training Random Forest")
 
         ### For tuned parameters
         current_params = params_rf.get(dataset_name[dataset_index], {})
+        if current_params.get("max_features") == "None":
+            current_params["max_features"] = None
         model = RandomForestClassifier(random_state=317, **current_params)
 
         ### For default parameters
@@ -120,10 +132,10 @@ for dataset_index, dataset in enumerate(dataset_indices):
         kappa = cohen_kappa_score(y_val, y_pred)
         ece = get_ece(test_probs, y_pred, y_val)
 
-        write_json(f"{prefix}/rf/{dataset_name[dataset_index]}/time_tuned.json", train_time)
-        write_json(f"{prefix}/rf/{dataset_name[dataset_index]}/acc_tuned.json", acc)
-        write_json(f"{prefix}/rf/{dataset_name[dataset_index]}/kappa_tuned.json", kappa)
-        write_json(f"{prefix}/rf/{dataset_name[dataset_index]}/ece_tuned.json", ece)
+        write_json(f"{prefix}/rf/337/{dataset_name[dataset_index]}/time_tuned.json", train_time)
+        write_json(f"{prefix}/rf/337/{dataset_name[dataset_index]}/acc_tuned.json", acc)
+        write_json(f"{prefix}/rf/337/{dataset_name[dataset_index]}/kappa_tuned.json", kappa)
+        write_json(f"{prefix}/rf/337/{dataset_name[dataset_index]}/ece_tuned.json", ece)
 
 
         print("RF Time: ", train_time)
@@ -142,6 +154,9 @@ for dataset_index, dataset in enumerate(dataset_indices):
         # model = xgb.XGBClassifier(random_state=317)
 
         start = time.time()
+        # y_train = le.fit_transform(y_train)
+        # y_val = le.transform(y_val)
+        # y_test = le.transform(y_test)
         model.fit(X_train, y_train)
         y_pred = model.predict(X_val)
         end_time = time.time()
@@ -152,15 +167,15 @@ for dataset_index, dataset in enumerate(dataset_indices):
         kappa = cohen_kappa_score(y_val, y_pred)
         ece = get_ece(test_probs, y_pred, y_val)
 
-        write_json(f"{prefix}/xgbt/{dataset_name[dataset_index]}/time_tuned.json", train_time)
-        write_json(f"{prefix}/xgbt/{dataset_name[dataset_index]}/acc_tuned.json", acc)
-        write_json(f"{prefix}/xgbt/{dataset_name[dataset_index]}/kappa_tuned.json", kappa)
-        write_json(f"{prefix}/xgbt/{dataset_name[dataset_index]}/ece_tuned.json", ece)
+        write_json(f"{prefix}/xgbt/337/{dataset_name[dataset_index]}/time_tuned.json", train_time)
+        write_json(f"{prefix}/xgbt/337/{dataset_name[dataset_index]}/acc_tuned.json", acc)
+        write_json(f"{prefix}/xgbt/337/{dataset_name[dataset_index]}/kappa_tuned.json", kappa)
+        write_json(f"{prefix}/xgbt/337/{dataset_name[dataset_index]}/ece_tuned.json", ece)
 
-        print("RF Time: ", train_time)
-        print("RF Accuracy: ", acc)
-        print("RF Cohen Kappa score: ", kappa)
-        print("RF ECE score: ", ece )
+        print("XGBT Time: ", train_time)
+        print("XGBT Accuracy: ", acc)
+        print("XGBT Cohen Kappa score: ", kappa)
+        print("XGBT ECE score: ", ece )
 
     if DN == 1:
         print("\n Training TabNet")
@@ -197,17 +212,15 @@ for dataset_index, dataset in enumerate(dataset_indices):
         kappa = cohen_kappa_score(y_val, y_pred)
         ece = get_ece(test_probs, y_pred, y_val)
 
-        write_json(f"{prefix}/tabnet/{dataset_name[dataset_index]}/time_tuned.json", train_time)
-        write_json(f"{prefix}/tabnet/{dataset_name[dataset_index]}/acc_tuned.json", acc)
-        write_json(f"{prefix}/tabnet/{dataset_name[dataset_index]}/kappa_tuned.json", kappa)
-        write_json(f"{prefix}/tabnet/{dataset_name[dataset_index]}/ece_tuned.json", ece)
+        write_json(f"{prefix}/tabnet/337/{dataset_name[dataset_index]}/time_tuned.json", train_time)
+        write_json(f"{prefix}/tabnet/337/{dataset_name[dataset_index]}/acc_tuned.json", acc)
+        write_json(f"{prefix}/tabnet/337/{dataset_name[dataset_index]}/kappa_tuned.json", kappa)
+        write_json(f"{prefix}/tabnet/337/{dataset_name[dataset_index]}/ece_tuned.json", ece)
 
-        print("RF Time: ", train_time)
-        print("RF Accuracy: ", acc)
-        print("RF Cohen Kappa score: ", kappa)
-        print("RF ECE score: ", ece)
-
-
+        print("Tabnet Time: ", train_time)
+        print("Tabnet Accuracy: ", acc)
+        print("Tabnet Cohen Kappa score: ", kappa)
+        print("Tabnet ECE score: ", ece)
 
 
 
@@ -217,7 +230,9 @@ for dataset_index, dataset in enumerate(dataset_indices):
 
 
 
-    break
+
+
+    # break
 
 
 
