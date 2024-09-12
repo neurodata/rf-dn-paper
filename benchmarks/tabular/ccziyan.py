@@ -27,9 +27,9 @@ prefix = "new_results"
 SUITE_ID = [337]
 X_data_list, y_data_list, dataset_name = import_datasets(SUITE_ID)
 
-RF = 1
-XGBT = 1
-DN = 0
+RF = 0
+XGBT = 0
+DN = 1
 
 def load_params(file_path):
     with open(file_path, 'r') as file:
@@ -38,11 +38,11 @@ def load_params(file_path):
 
 path_rf = "SmacResults/337/RF_params.json"
 path_xgbt = "SmacResults/337/XGBT_params.json"
-# path_tab = "SmacResults/337/Tab_params.json"
+path_tab = "SmacResults/337/Tab_params.json"
 
 params_rf = load_params(path_rf)
 params_xgbt = load_params(path_xgbt)
-# params_tab = load_params(path_tab)
+params_tab = load_params(path_tab)
 
 for dataset_index, dataset in enumerate(dataset_indices):
     # if dataset == 2:
@@ -182,6 +182,7 @@ for dataset_index, dataset in enumerate(dataset_indices):
 
         ### For tuned parameters
         current_params = params_tab.get(dataset_name[dataset_index], {})
+        print("Name getted:", dataset_name[dataset_index])
         fit_params = {
             'max_epochs': current_params.pop('max_epochs', 100),  
             'batch_size': current_params.pop('batch_size', 1024)  
