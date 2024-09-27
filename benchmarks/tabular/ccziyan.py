@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 
 # parameters 
-dataset_indices_max = 7
+dataset_indices_max = 16
 max_shape_to_run = 10000
 alpha_range_nn = [0.001, 0.01, 0.1]
 subsample = [0.5, 0.8, 1.0]
@@ -24,7 +24,7 @@ dict_data_indices = {dataset_ind: {} for dataset_ind in dataset_indices}
 prefix = "new_results"
 
 # Load data
-SUITE_ID = [334]
+SUITE_ID = [337]
 X_data_list, y_data_list, dataset_name = import_datasets(SUITE_ID)
 
 RF = 0
@@ -36,9 +36,9 @@ def load_params(file_path):
         return json.load(file)
 
 
-path_rf = "SmacResults/334/RF_params_1hr.json"
-path_xgbt = "SmacResults/334/XGBT_params_1hr.json"
-path_tab = "SmacResults/334/Tab_params.json"
+path_rf = "SmacResults/337/RF_params_1hr.json"
+path_xgbt = "SmacResults/337/XGBT_params_1hr.json"
+path_tab = "SmacResults/337/Tab_params_1hr.json"
 
 params_rf = load_params(path_rf)
 params_xgbt = load_params(path_xgbt)
@@ -111,7 +111,7 @@ for dataset_index, dataset in enumerate(dataset_indices):
 
     if RF == 1:
         print("\n Training Random Forest")
-        # if dataset_name[dataset_index] == "road-safety":
+        # if dataset_name[dataset_index] == "default-of-credit-card-clients":
 
         ### For tuned parameters
         current_params = params_rf.get(dataset_name[dataset_index], {})
@@ -133,10 +133,10 @@ for dataset_index, dataset in enumerate(dataset_indices):
         kappa = cohen_kappa_score(y_val, y_pred)
         ece = get_ece(test_probs, y_pred, y_val)
 
-        write_json(f"{prefix}/rf/334/{dataset_name[dataset_index]}/time_tuned_1hr.json", train_time)
-        write_json(f"{prefix}/rf/334/{dataset_name[dataset_index]}/acc_tuned_1hr.json", acc)
-        write_json(f"{prefix}/rf/334/{dataset_name[dataset_index]}/kappa_tuned_1hr.json", kappa)
-        write_json(f"{prefix}/rf/334/{dataset_name[dataset_index]}/ece_tuned_1hr.json", ece)
+        write_json(f"{prefix}/rf/337/{dataset_name[dataset_index]}/time_tuned_1hr.json", train_time)
+        write_json(f"{prefix}/rf/337/{dataset_name[dataset_index]}/acc_tuned_1hr.json", acc)
+        write_json(f"{prefix}/rf/337/{dataset_name[dataset_index]}/kappa_tuned_1hr.json", kappa)
+        write_json(f"{prefix}/rf/337/{dataset_name[dataset_index]}/ece_tuned_1hr.json", ece)
 
 
         print("RF Time: ", train_time)
@@ -147,14 +147,14 @@ for dataset_index, dataset in enumerate(dataset_indices):
     if XGBT == 1:
         print("\n Training XGBoost")
         
-        # if dataset_name[dataset_index] == "electricity":
+        # if dataset_name[dataset_index] == "pol":
 
         ### For tuned parameters
-        current_params = params_xgbt.get(dataset_name[dataset_index], {})
-        model = xgb.XGBClassifier(random_state=317, **current_params)
+        # current_params = params_xgbt.get(dataset_name[dataset_index], {})
+        # model = xgb.XGBClassifier(random_state=317, **current_params)
 
         ### For default parameters
-        # model = xgb.XGBClassifier(random_state=317)
+        model = xgb.XGBClassifier(random_state=317)
 
         start = time.time()
         # y_train = le.fit_transform(y_train)
@@ -170,75 +170,70 @@ for dataset_index, dataset in enumerate(dataset_indices):
         kappa = cohen_kappa_score(y_val, y_pred)
         ece = get_ece(test_probs, y_pred, y_val)
 
-        write_json(f"{prefix}/xgbt/334/{dataset_name[dataset_index]}/time_tuned_1hrjson", train_time)
-        write_json(f"{prefix}/xgbt/334/{dataset_name[dataset_index]}/acc_tuned_1hr.json", acc)
-        write_json(f"{prefix}/xgbt/334/{dataset_name[dataset_index]}/kappa_tuned_1hr.json", kappa)
-        write_json(f"{prefix}/xgbt/334/{dataset_name[dataset_index]}/ece_tuned_1hr.json", ece)
+        write_json(f"{prefix}/xgbt/337/{dataset_name[dataset_index]}/time_tuned_1hrjson", train_time)
+        write_json(f"{prefix}/xgbt/337/{dataset_name[dataset_index]}/acc_tuned_1hr.json", acc)
+        write_json(f"{prefix}/xgbt/337/{dataset_name[dataset_index]}/kappa_tuned_1hr.json", kappa)
+        write_json(f"{prefix}/xgbt/337/{dataset_name[dataset_index]}/ece_tuned_1hr.json", ece)
 
         print("XGBT Time: ", train_time)
         print("XGBT Accuracy: ", acc)
         print("XGBT Cohen Kappa score: ", kappa)
         print("XGBT ECE score: ", ece )
 
+            # break
+
     if DN == 1:
         print("\n Training TabNet")
 
-        # if dataset_name[dataset_index] ==  "albert":
+        if dataset_name[dataset_index] ==  "default-of-credit-card-clients":
 
-        ### For tuned parameters
-        current_params = params_tab.get(dataset_name[dataset_index], {})
-        print("Name getted:", dataset_name[dataset_index])
-        fit_params = {
-            'max_epochs': current_params.pop('max_epochs', 100),  
-            'batch_size': current_params.pop('batch_size', 1024)  
-        }
-        if current_params.get('solver') == 'adam':
-            optimizer_fn = torch.optim.Adam
-        elif current_params.get('solver') == 'sgd':
-            optimizer_fn = torch.optim.SGD
-        current_params.pop('solver', None)
-        current_params['optimizer_fn'] = optimizer_fn
-        optimizer_params = {'lr': current_params.pop('lr', 0.02)}
-        current_params['optimizer_params'] = optimizer_params
-        model = TabNetClassifier(seed=317, verbose=0, **current_params)
-        start = time.time()
-        model.fit(X_train, y_train, eval_set=[(X_val, y_val)], **fit_params)
+            ### For tuned parameters
+            current_params = params_tab.get(dataset_name[dataset_index], {})
+            print("Name getted:", dataset_name[dataset_index])
+            fit_params = {
+                'max_epochs': current_params.pop('max_epochs', 100),  
+                'batch_size': current_params.pop('batch_size', 1024)  
+            }
+            if current_params.get('solver') == 'adam':
+                optimizer_fn = torch.optim.Adam
+            elif current_params.get('solver') == 'sgd':
+                optimizer_fn = torch.optim.SGD
+            current_params.pop('solver', None)
+            current_params['optimizer_fn'] = optimizer_fn
+            optimizer_params = {'lr': current_params.pop('lr', 0.02)}
+            current_params['optimizer_params'] = optimizer_params
+            model = TabNetClassifier(seed=317, verbose=0, **current_params)
+            start = time.time()
+            model.fit(X_train, y_train, eval_set=[(X_val, y_val)], **fit_params)
 
-        ### For default params
-        # model = TabNetClassifier(seed=317, verbose=0)
-        # start = time.time()
-        # model.fit(X_train, y_train, eval_set=[(X_val, y_val)])
+            ### For default params
+            # model = TabNetClassifier(seed=317, verbose=0)
+            # start = time.time()
+            # model.fit(X_train, y_train, eval_set=[(X_val, y_val)])
 
-        y_pred = model.predict(X_val)
-        end_time = time.time()
-        test_probs = model.predict_proba(X_val)
+            y_pred = model.predict(X_val)
+            end_time = time.time()
+            test_probs = model.predict_proba(X_val)
 
-        train_time = end_time - start
-        acc = accuracy_score(y_val, y_pred)
-        kappa = cohen_kappa_score(y_val, y_pred)
-        ece = get_ece(test_probs, y_pred, y_val)
+            train_time = end_time - start
+            acc = accuracy_score(y_val, y_pred)
+            kappa = cohen_kappa_score(y_val, y_pred)
+            ece = get_ece(test_probs, y_pred, y_val)
 
-        write_json(f"{prefix}/tabnet/334/{dataset_name[dataset_index]}/time_tuned.json", train_time)
-        write_json(f"{prefix}/tabnet/334/{dataset_name[dataset_index]}/acc_tuned.json", acc)
-        write_json(f"{prefix}/tabnet/334/{dataset_name[dataset_index]}/kappa_tuned.json", kappa)
-        write_json(f"{prefix}/tabnet/334/{dataset_name[dataset_index]}/ece_tuned.json", ece)
+            write_json(f"{prefix}/tabnet/337/{dataset_name[dataset_index]}/time_tuned_1hr.json", train_time)
+            write_json(f"{prefix}/tabnet/337/{dataset_name[dataset_index]}/acc_tuned_1hr.json", acc)
+            write_json(f"{prefix}/tabnet/337/{dataset_name[dataset_index]}/kappa_tuned_1hr.json", kappa)
+            write_json(f"{prefix}/tabnet/337/{dataset_name[dataset_index]}/ece_tuned_1hr.json", ece)
 
-        print("Tabnet Time: ", train_time)
-        print("Tabnet Accuracy: ", acc)
-        print("Tabnet Cohen Kappa score: ", kappa)
-        print("Tabnet ECE score: ", ece)
+            print("Tabnet Time: ", train_time)
+            print("Tabnet Accuracy: ", acc)
+            print("Tabnet Cohen Kappa score: ", kappa)
+            print("Tabnet ECE score: ", ece)
 
-
-
-
+            break
 
 
 
-
-
-
-
-    # break
 
 
 

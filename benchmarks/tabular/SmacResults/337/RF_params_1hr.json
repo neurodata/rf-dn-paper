@@ -2,20 +2,20 @@
     "credit": {
         "criterion": "entropy",
         "max_depth": 20,
-        "max_features": "sqrt",
+        "max_features": "None",
         "max_samples": 0.9691083523958117,
         "min_samples_leaf": 1,
         "min_samples_split": 2,
-        "n_estimators": 252
+        "n_estimators": 1252
     },
     "electricity": {
-        "criterion": "gini",
+        "criterion": "entropy",
         "max_depth": 20,
-        "max_features": "log2",
+        "max_features": "None",
         "max_samples": 0.9647413210898548,
         "min_samples_leaf": 1,
         "min_samples_split": 2,
-        "n_estimators": 108
+        "n_estimators": 1108
     },
     "covertype": {
         "criterion": "gini",
@@ -42,15 +42,15 @@
         "max_samples": 0.984461385589925,
         "min_samples_leaf": 1,
         "min_samples_split": 4,
-        "n_estimators": 776
+        "n_estimators": 1276
     },
     "MagicTelescope": {
         "criterion": "entropy",
         "max_depth": 21,
-        "max_features": "sqrt",
-        "max_samples": 0.8807695097869216,
+        "max_features": "log2",
+        "max_samples": 0.9807695097869216,
         "min_samples_leaf": 1,
-        "min_samples_split": 2,
+        "min_samples_split": 5,
         "n_estimators": 1492
     },
     "bank-marketing": {
@@ -93,10 +93,10 @@
         "criterion": "gini",
         "max_depth": 21,
         "max_features": "None",
-        "max_samples": 0.9882011939644544,
+        "max_samples": 0.2882011939644544,
         "min_samples_leaf": 1,
         "min_samples_split": 2,
-        "n_estimators": 816
+        "n_estimators": 1316
     },
     "jannis": {
         "criterion": "log_loss",
@@ -111,10 +111,10 @@
         "criterion": "gini",
         "max_depth": 21,
         "max_features": "None",
-        "max_samples": 0.9888965344844416,
+        "max_samples": 0.3888965344844416,
         "min_samples_leaf": 1,
         "min_samples_split": 2,
-        "n_estimators": 708
+        "n_estimators": 1408
     },
     "Bioresponse": {
         "criterion": "entropy",

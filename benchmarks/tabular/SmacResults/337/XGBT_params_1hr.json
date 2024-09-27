@@ -3,78 +3,78 @@
         "colsample_bylevel": 0.9701000734994785,
         "colsample_bynode": 0.6545724822936216,
         "colsample_bytree": 0.5958614671469253,
-        "gamma": 0.14035844350103893,
-        "learning_rate": 0.28687548834719934,
-        "max_depth": 8,
+        "gamma": 0.94035844350103893,
+        "learning_rate": 0.12687548834719934,
+        "max_depth": 20,
         "min_child_weight": 2,
         "n_estimators": 1494,
-        "subsample": 0.6912214484095188
+        "subsample": 0.9912214484095188
     },
     "electricity": {
-        "colsample_bylevel": 0.683119850018741,
+        "colsample_bylevel": 0.183119850018741,
         "colsample_bynode": 0.8595439292367302,
-        "colsample_bytree": 0.9936804816043545,
+        "colsample_bytree": 0.8936804816043545,
         "gamma": 0.17841636973138664,
-        "learning_rate": 0.2996472843928155,
-        "max_depth": 19,
+        "learning_rate": 0.1196472843928155,
+        "max_depth": 21,
         "min_child_weight": 2,
-        "n_estimators": 1094,
-        "subsample": 0.684939858432469
+        "n_estimators": 1394,
+        "subsample": 0.984939858432469
     },
     "covertype": {
         "colsample_bylevel": 0.6841694527491273,
         "colsample_bynode": 0.7521258791466592,
         "colsample_bytree": 0.8542075266578653,
         "gamma": 0.17841636973138664,
-        "learning_rate": 0.2936068843275964,
-        "max_depth": 14,
+        "learning_rate": 0.1136068843275964,
+        "max_depth": 19,
         "min_child_weight": 3,
         "n_estimators": 965,
-        "subsample": 0.679753950286893
+        "subsample": 0.979753950286893
     },
     "pol": {
-        "colsample_bylevel": 0.7430921396820616,
-        "colsample_bynode": 0.6063110478838847,
-        "colsample_bytree": 0.6832122913577724,
+        "colsample_bylevel": 0.9430921396820616,
+        "colsample_bynode": 0.9063110478838847,
+        "colsample_bytree": 0.9832122913577724,
         "gamma": 0.11819655769629316,
-        "learning_rate": 0.26250660140116683,
-        "max_depth": 6,
+        "learning_rate": 0.10250660140116683,
+        "max_depth": 20,
         "min_child_weight": 1,
-        "n_estimators": 1104,
-        "subsample": 0.6662054557877531
+        "n_estimators": 1404,
+        "subsample": 0.9662054557877531
     },
     "house_16H": {
         "colsample_bylevel": 0.7110127500129322,
         "colsample_bynode": 0.7888818890445719,
         "colsample_bytree": 0.8931511066298188,
         "gamma": 0.15471634961913655,
-        "learning_rate": 0.2867980255395253,
-        "max_depth": 6,
+        "learning_rate": 0.1167980255395253,
+        "max_depth": 19,
         "min_child_weight": 3,
-        "n_estimators": 947,
-        "subsample": 0.6659712486866677
+        "n_estimators": 1247,
+        "subsample": 0.9659712486866677
     },
     "MagicTelescope": {
         "colsample_bylevel": 0.8006325564606935,
         "colsample_bynode": 0.6246347243471965,
         "colsample_bytree": 0.6702264438270331,
         "gamma": 0.14420335635094633,
-        "learning_rate": 0.23994841070080034,
-        "max_depth": 4,
+        "learning_rate": 0.12994841070080034,
+        "max_depth": 19,
         "min_child_weight": 2,
-        "n_estimators": 974,
-        "subsample": 0.7279636906646596
+        "n_estimators": 1374,
+        "subsample": 0.9279636906646596
     },
     "bank-marketing": {
         "colsample_bylevel": 0.7220678576222633,
         "colsample_bynode": 0.8150860310502579,
         "colsample_bytree": 0.8655054784519463,
-        "gamma": 0.10340724860498124,
-        "learning_rate": 0.28964522191261904,
-        "max_depth": 13,
+        "gamma": 0.90340724860498124,
+        "learning_rate": 0.10964522191261904,
+        "max_depth": 19,
         "min_child_weight": 6,
         "n_estimators": 1111,
-        "subsample": 0.6821169908409896
+        "subsample": 0.9821169908409896
     },
     "MiniBooNE": {
         "colsample_bylevel": 0.6841694527491273,
@@ -102,77 +102,77 @@
         "colsample_bylevel": 0.6841694527491273,
         "colsample_bynode": 0.7521258791466592,
         "colsample_bytree": 0.8542075266578653,
-        "gamma": 0.17841636973138664,
-        "learning_rate": 0.2936068843275964,
-        "max_depth": 14,
+        "gamma": 0.97841636973138664,
+        "learning_rate": 0.1036068843275964,
+        "max_depth": 18,
         "min_child_weight": 3,
-        "n_estimators": 965,
-        "subsample": 0.679753950286893
+        "n_estimators": 1365,
+        "subsample": 0.979753950286893
     },
     "Diabetes130US": {
         "colsample_bylevel": 0.8216300899307534,
         "colsample_bynode": 0.7649389691438414,
         "colsample_bytree": 0.8645021785211531,
-        "gamma": 0.10011315252709926,
-        "learning_rate": 0.27191218765262026,
-        "max_depth": 14,
+        "gamma": 0.97011315252709926,
+        "learning_rate": 0.11191218765262026,
+        "max_depth": 19,
         "min_child_weight": 1,
         "n_estimators": 1132,
-        "subsample": 0.7204996718071182
+        "subsample": 0.9204996718071182
     },
     "jannis": {
         "colsample_bylevel": 0.6841694527491273,
         "colsample_bynode": 0.8150860310502579,
         "colsample_bytree": 0.8655054784519463,
-        "gamma": 0.2573783935536148,
-        "learning_rate": 0.28815400057691976,
-        "max_depth": 13,
+        "gamma": 0.9573783935536148,
+        "learning_rate": 0.11815400057691976,
+        "max_depth": 20,
         "min_child_weight": 3,
-        "n_estimators": 965,
-        "subsample": 0.679753950286893
+        "n_estimators": 1265,
+        "subsample": 0.979753950286893
     },
     "default-of-credit-card-clients": {
-        "colsample_bylevel": 0.7214660285659258,
+        "colsample_bylevel": 0.9214660285659258,
         "colsample_bynode": 0.7914714437821726,
         "colsample_bytree": 0.9817972653401712,
-        "gamma": 0.1286863222339306,
-        "learning_rate": 0.2998333835855037,
-        "max_depth": 12,
+        "gamma": 0.9286863222339306,
+        "learning_rate": 0.1098333835855037,
+        "max_depth": 20,
         "min_child_weight": 1,
         "n_estimators": 1167,
-        "subsample": 0.6515952524147529
+        "subsample": 0.9515952524147529
     },
     "Bioresponse": {
-        "colsample_bylevel": 0.7241537883153844,
+        "colsample_bylevel": 0.9241537883153844,
         "colsample_bynode": 0.7386172930489208,
         "colsample_bytree": 0.8609408932603022,
-        "gamma": 0.19332801435763922,
-        "learning_rate": 0.2936068843275964,
-        "max_depth": 10,
+        "gamma": 0.99332801435763922,
+        "learning_rate": 0.1136068843275964,
+        "max_depth": 20,
         "min_child_weight": 9,
-        "n_estimators": 1006,
-        "subsample": 0.679753950286893
+        "n_estimators": 1406,
+        "subsample": 0.979753950286893
     },
     "california": {
-        "colsample_bylevel": 0.7758169377125658,
+        "colsample_bylevel": 0.9758169377125658,
         "colsample_bynode": 0.910903134837318,
         "colsample_bytree": 0.9302721868845663,
-        "gamma": 0.16623758437498093,
-        "learning_rate": 0.24262108814138053,
-        "max_depth": 14,
+        "gamma": 0.96623758437498093,
+        "learning_rate": 0.12262108814138053,
+        "max_depth": 21,
         "min_child_weight": 5,
-        "n_estimators": 1095,
-        "subsample": 0.6180071666974086
+        "n_estimators": 1295,
+        "subsample": 0.9180071666974086
     },
     "heloc": {
-        "colsample_bylevel": 0.7029277180375672,
+        "colsample_bylevel": 0.9829277180375672,
         "colsample_bynode": 0.89504363298756,
-        "colsample_bytree": 0.5837150489199923,
-        "gamma": 0.16084935479957832,
-        "learning_rate": 0.24649337993615708,
-        "max_depth": 6,
+        "colsample_bytree": 0.9837150489199923,
+        "gamma": 0.98084935479957832,
+        "learning_rate": 0.10349337993615708,
+        "max_depth": 20,
         "min_child_weight": 3,
-        "n_estimators": 1250,
-        "subsample": 0.6733856412972936
+        "n_estimators": 1487,
+        "subsample": 0.9733856412972936
     }
 }
