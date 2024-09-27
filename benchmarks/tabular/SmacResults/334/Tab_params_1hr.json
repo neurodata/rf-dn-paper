@@ -1,0 +1,58 @@
+{
+    "albert": {
+        "batch_size": 337,
+        "lr": 0.07019238667793253,
+        "max_epochs": 216,
+        "n_a": 176,
+        "n_d": 109,
+        "solver": "adam"
+    },
+    "covertype": {
+        "batch_size": 466,
+        "lr": 0.01478404831565831,
+        "max_epochs": 84,
+        "n_a": 120,
+        "n_d": 101,
+        "solver": "adam"
+    },
+    "compas-two-years": {
+        "batch_size": 1153,
+        "lr": 0.06494351719359896,
+        "max_epochs": 248,
+        "n_a": 14,
+        "n_d": 126,
+        "solver": "adam"
+    },
+    "default-of-credit-card-clients": {
+        "batch_size": 431,
+        "lr": 0.004253519924914082,
+        "max_epochs": 191,
+        "n_a": 89,
+        "n_d": 126,
+        "solver": "adam"
+    },
+    "electricity": {
+        "batch_size": 1448,
+        "lr": 0.012932601870023621,
+        "max_epochs": 223,
+        "n_a": 115,
+        "n_d": 30,
+        "solver": "adam"
+    },
+    "eye_movements": {
+        "batch_size": 854,
+        "lr": 0.04770160470431317,
+        "max_epochs": 68,
+        "n_a": 96,
+        "n_d": 13,
+        "solver": "adam"
+    },
+    "road-safety": {
+        "batch_size": 153,
+        "lr": 0.04598482365380299,
+        "max_epochs": 65,
+        "n_a": 113,
+        "n_d": 62,
+        "solver": "adam"
+    }
+}

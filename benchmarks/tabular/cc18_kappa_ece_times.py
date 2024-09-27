@@ -18,9 +18,9 @@ Parameters
 num_classes = 10
 reload_data = False  # indicator of whether to upload the data again
 
-path_save = "metrics/cc18_all_parameters"
-path_params = "metrics/dict_parameters"
-path_train_val_test_indices = "metrics/dict_data_indices"
+path_save = "metrics/cc18_all_parameters_test"
+path_params = "metrics/dict_parameters_test"
+path_train_val_test_indices = "metrics/dict_data_indices_test"
 with open(path_params + ".json", "r") as json_file:
     dictionary_params = json.load(json_file)
 
@@ -212,13 +212,13 @@ save_methods_rewrite = {"json": 1}
 save_best_parameters(
     save_methods,
     save_methods_rewrite,
-    "metrics/cc18_sample_sizes.json",
+    "metrics/cc18_sample_sizes_test.json",
     all_sample_sizes,
 )
 
 save_best_parameters(
-    save_methods, save_methods_rewrite, "results/cc18_kappa_and_ece", new_dict
+    save_methods, save_methods_rewrite, "results/cc18_kappa_and_ece_test", new_dict
 )
 save_best_parameters(
-    save_methods, save_methods_rewrite, "results/cc18_training_times", new_dict_times
+    save_methods, save_methods_rewrite, "results/cc18_training_times_test", new_dict_times
 )

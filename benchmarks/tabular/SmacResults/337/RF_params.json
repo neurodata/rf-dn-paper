@@ -1,0 +1,146 @@
+{
+    "credit": {
+        "criterion": "log_loss",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.9882603955188162,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 773
+    },
+    "electricity": {
+        "criterion": "log_loss",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.8672333781089705,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 147
+    },
+    "covertype": {
+        "criterion": "gini",
+        "max_depth": 21,
+        "max_features": "sqrt",
+        "max_samples": 0.748448206138323,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 1161
+    },
+    "pol": {
+        "criterion": "log_loss",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.9237313997922102,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 381
+    },
+    "house_16H": {
+        "criterion": "log_loss",
+        "max_depth": 20,
+        "max_features": "None",
+        "max_samples": 0.9878469707940801,
+        "min_samples_leaf": 1,
+        "min_samples_split": 3,
+        "n_estimators": 116
+    },
+    "MagicTelescope": {
+        "criterion": "entropy",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.9884503078212304,
+        "min_samples_leaf": 1,
+        "min_samples_split": 3,
+        "n_estimators": 151
+    },
+    "bank-marketing": {
+        "criterion": "gini",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.9882139602439883,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 206
+    },
+    "MiniBooNE": {
+        "criterion": "log_loss",
+        "max_depth": 21,
+        "max_features": "log2",
+        "max_samples": 0.9894598524157128,
+        "min_samples_leaf": 1,
+        "min_samples_split": 4,
+        "n_estimators": 273
+    },
+    "Higgs": {
+        "criterion": "log_loss",
+        "max_depth": 21,
+        "max_features": "sqrt",
+        "max_samples": 0.9778409545532449,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 116
+    },
+    "eye_movements": {
+        "criterion": "entropy",
+        "max_depth": 19,
+        "max_features": "log2",
+        "max_samples": 0.982196694630582,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 476
+    },
+    "Diabetes130US": {
+        "criterion": "gini",
+        "max_depth": 21,
+        "max_features": "sqrt",
+        "max_samples": 0.9884102562448526,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 258
+    },
+    "jannis": {
+        "criterion": "entropy",
+        "max_depth": 20,
+        "max_features": "None",
+        "max_samples": 0.9891662283054089,
+        "min_samples_leaf": 3,
+        "min_samples_split": 7,
+        "n_estimators": 154
+    },
+    "default-of-credit-card-clients": {
+        "criterion": "log_loss",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.9260907835422265,
+        "min_samples_leaf": 1,
+        "min_samples_split": 5,
+        "n_estimators": 209
+    },
+    "Bioresponse": {
+        "criterion": "entropy",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.9808995840436561,
+        "min_samples_leaf": 1,
+        "min_samples_split": 3,
+        "n_estimators": 328
+    },
+    "california": {
+        "criterion": "entropy",
+        "max_depth": 21,
+        "max_features": "sqrt",
+        "max_samples": 0.9836204130517437,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 114
+    },
+    "heloc": {
+        "criterion": "log_loss",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.9150853991794056,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 305
+    }
+}

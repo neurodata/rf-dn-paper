@@ -22,10 +22,10 @@ import torchaudio.transforms as trans
 import torchvision.models as models
 
 
-import ax
-from ax.plot.trace import optimization_trace_single_method
-from ax.service.managed_loop import optimize
-from ax.service.ax_client import AxClient
+# import ax
+# from ax.plot.trace import optimization_trace_single_method
+# from ax.service.managed_loop import optimize
+# from ax.service.ax_client import AxClient
 
 from ray import tune
 from ray.tune import report
@@ -58,7 +58,7 @@ def preprocessdataset(data_folder, labels_file):
 
     # select subset of data that only contains 300 samples per class
     labels_chosen = train_label[
-        train_label["label"].map(train_label["label"].value_counts() == 300)
+        train_label["label"].map(train_label["label"].value_counts() >= 300)
     ]
 
     training_files = []
@@ -73,25 +73,48 @@ def preprocessdataset(data_folder, labels_file):
 
     # convert selected label names to integers
     labels_to_index = {
-        "Acoustic_guitar": 0,
-        "Applause": 1,
-        "Bass_drum": 2,
-        "Trumpet": 3,
-        "Clarinet": 4,
-        "Double_bass": 5,
-        "Laughter": 6,
-        "Shatter": 7,
-        "Snare_drum": 8,
-        "Saxophone": 9,
-        "Tearing": 10,
-        "Flute": 11,
-        "Hi-hat": 12,
-        "Violin_or_fiddle": 13,
-        "Squeak": 14,
-        "Fart": 15,
-        "Fireworks": 16,
-        "Cello": 17,
-    }
+            "Acoustic_guitar": 0,
+            "Applause": 1,
+            "Bark": 2,
+            "Bass_drum": 3,
+            "Burping_or_eructation": 4,
+            "Bus": 5,
+            "Cello": 6,
+            "Chime": 7,
+            "Clarinet": 8,
+            "Computer_keyboard": 9,
+            "Cough": 10,
+            "Cowbell": 11,
+            "Double_bass": 12,
+            "Drawer_open_or_close": 13,
+            "Electric_piano": 14,
+            "Fart": 15,
+            "Finger_snapping": 16,
+            "Fireworks": 17,
+            "Flute": 18,
+            "Glockenspiel": 19,
+            "Gong": 20,
+            "Gunshot_or_gunfire": 21,
+            "Harmonica": 22,
+            "Hi-hat": 23,
+            "Keys_jangling": 24,
+            "Knock": 25,
+            "Laughter": 26,
+            "Meow": 27,
+            "Microwave_oven": 28,
+            "Oboe": 29,
+            "Saxophone": 30,
+            "Scissors": 31,
+            "Shatter": 32,
+            "Snare_drum": 33,
+            "Squeak": 34,
+            "Tambourine": 35,
+            "Tearing": 36,
+            "Telephone": 37,
+            "Trumpet": 38,
+            "Violin_or_fiddle": 39,
+            "Writing": 40,
+        }
 
     # encode labels to integers
     get_labels = labels_chosen["label"].replace(labels_to_index).to_list()
@@ -327,8 +350,11 @@ def run_rf_image_set(
         label_ls.append(np.repeat(cls, len(partitions[i])))
         i += 1
 
+    print(len(image_ls))
     train_images = np.concatenate(image_ls)
     train_labels = np.concatenate(label_ls)
+    train_labels = train_labels[:len(train_images)] 
+    # Sometimes the shape of the train_labels would be differ from the train_images, so I just changed the shape of train_labels Ziyan
 
     # Obtain only test images and labels for selected classes
     image_ls = []

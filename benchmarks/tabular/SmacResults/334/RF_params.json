@@ -1,0 +1,65 @@
+{
+    "electricity": {
+        "criterion": "gini",
+        "max_depth": 21,
+        "max_features": "log2",
+        "max_samples": 0.8788407391132154,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 677
+    },
+    "eye_movements": {
+        "criterion": "entropy",
+        "max_depth": 21,
+        "max_features": "log2",
+        "max_samples": 0.980636813720002,
+        "min_samples_leaf": 1,
+        "min_samples_split": 4,
+        "n_estimators": 134
+    },
+    "covertype": {
+        "criterion": "log_loss",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.978071587727181,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 202
+    },
+    "albert": {
+        "criterion": "gini",
+        "max_depth": 18,
+        "max_features": "None",
+        "max_samples": 0.972863448301494,
+        "min_samples_leaf": 1,
+        "min_samples_split": 3,
+        "n_estimators": 169
+    },
+    "default-of-credit-card-clients": {
+        "criterion": "gini",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.9765932677215494,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 1121
+    },
+    "road-safety": {
+        "criterion": "entropy",
+        "max_depth": 21,
+        "max_features": "None",
+        "max_samples": 0.988615282249801,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 455
+    },
+    "compas-two-years": {
+        "criterion": "entropy",
+        "max_depth": 19,
+        "max_features": "None",
+        "max_samples": 0.981677983268124,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 195
+    }
+}

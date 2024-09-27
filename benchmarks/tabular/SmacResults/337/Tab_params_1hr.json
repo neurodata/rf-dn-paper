@@ -1,0 +1,130 @@
+{
+    "bank-marketing": {
+        "batch_size": 185,
+        "lr": 0.004368846756807461,
+        "max_epochs": 114,
+        "n_a": 102,
+        "n_d": 123,
+        "solver": "adam"
+    },
+    "Bioresponse": {
+        "batch_size": 300,
+        "lr": 0.08467590733743288,
+        "max_epochs": 79,
+        "n_a": 113,
+        "n_d": 110,
+        "solver": "adam"
+    },
+    "california": {
+        "batch_size": 1153,
+        "lr": 0.06494351719359896,
+        "max_epochs": 248,
+        "n_a": 14,
+        "n_d": 126,
+        "solver": "adam"
+    },
+    "covertype": {
+        "batch_size": 264,
+        "lr": 0.012660013598153034,
+        "max_epochs": 253,
+        "n_a": 103,
+        "n_d": 25,
+        "solver": "adam"
+    },
+    "credit": {
+        "batch_size": 352,
+        "lr": 0.07019238667793253,
+        "max_epochs": 219,
+        "n_a": 106,
+        "n_d": 79,
+        "solver": "adam"
+    },
+    "default-of-credit-card-clients": {
+        "batch_size": 589,
+        "lr": 0.07764913525398745,
+        "max_epochs": 164,
+        "n_a": 75,
+        "n_d": 6,
+        "solver": "adam"
+    },
+    "Diabetes130US": {
+        "batch_size": 589,
+        "lr": 0.07764913525398745,
+        "max_epochs": 164,
+        "n_a": 75,
+        "n_d": 6,
+        "solver": "adam"
+    },
+    "electricity": {
+        "batch_size": 1840,
+        "lr": 0.0119707715849032,
+        "max_epochs": 225,
+        "n_a": 131,
+        "n_d": 25,
+        "solver": "adam"
+    },
+    "eye_movements": {
+        "batch_size": 1207,
+        "lr": 0.01036926306073152,
+        "max_epochs": 122,
+        "n_a": 120,
+        "n_d": 25,
+        "solver": "adam"
+    },
+    "heloc": {
+        "batch_size": 1694,
+        "lr": 0.0807610762686905,
+        "max_epochs": 89,
+        "n_a": 5,
+        "n_d": 21,
+        "solver": "adam"
+    },
+    "Higgs": {
+        "batch_size": 132,
+        "lr": 0.09149692119049804,
+        "max_epochs": 84,
+        "n_a": 103,
+        "n_d": 86,
+        "solver": "adam"
+    },
+    "house_16H": {
+        "batch_size": 541,
+        "lr": 0.0543750943285977,
+        "max_epochs": 85,
+        "n_a": 118,
+        "n_d": 20,
+        "solver": "adam"
+    },
+    "jannis": {
+        "batch_size": 589,
+        "lr": 0.07764913525398745,
+        "max_epochs": 164,
+        "n_a": 75,
+        "n_d": 6,
+        "solver": "adam"
+    },
+    "MagicTelescope": {
+        "batch_size": 604,
+        "lr": 0.0698296209651502,
+        "max_epochs": 172,
+        "n_a": 41,
+        "n_d": 6,
+        "solver": "adam"
+    },
+    "MiniBooNE": {
+        "batch_size": 1257,
+        "lr": 0.012105046138919908,
+        "max_epochs": 63,
+        "n_a": 81,
+        "n_d": 36,
+        "solver": "adam"
+    },
+    "pol": {
+        "batch_size": 867,
+        "lr": 0.01081701540108496,
+        "max_epochs": 169,
+        "n_a": 107,
+        "n_d": 24,
+        "solver": "adam"
+    }
+}

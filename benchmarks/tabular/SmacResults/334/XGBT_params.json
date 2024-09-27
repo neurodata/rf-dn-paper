@@ -1,0 +1,79 @@
+{
+    "electricity": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.7521258791466592,
+        "colsample_bytree": 0.8542075266578653,
+        "gamma": 0.17841636973138664,
+        "learning_rate": 0.2936068843275964,
+        "max_depth": 14,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "eye_movements": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "covertype": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "albert": {
+        "colsample_bylevel": 0.7121177269792016,
+        "colsample_bynode": 0.7961219315098178,
+        "colsample_bytree": 0.8462050819267193,
+        "gamma": 0.4596996785735403,
+        "learning_rate": 0.2796283473545603,
+        "max_depth": 16,
+        "min_child_weight": 4,
+        "n_estimators": 1200,
+        "subsample": 0.6415111175688668
+    },
+    "default-of-credit-card-clients": {
+        "colsample_bylevel": 0.9776210490834212,
+        "colsample_bynode": 0.8775042258445613,
+        "colsample_bytree": 0.7542663441024107,
+        "gamma": 0.10330164670010054,
+        "learning_rate": 0.2588301011676219,
+        "max_depth": 18,
+        "min_child_weight": 1,
+        "n_estimators": 1003,
+        "subsample": 0.6477008086095855
+    },
+    "road-safety": {
+        "colsample_bylevel": 0.6841694527491273,
+        "colsample_bynode": 0.8150860310502579,
+        "colsample_bytree": 0.8655054784519463,
+        "gamma": 0.2573783935536148,
+        "learning_rate": 0.28815400057691976,
+        "max_depth": 13,
+        "min_child_weight": 3,
+        "n_estimators": 780,
+        "subsample": 0.679753950286893
+    },
+    "compas-two-years": {
+        "colsample_bylevel": 0.7674631624672195,
+        "colsample_bynode": 0.7210852233611122,
+        "colsample_bytree": 0.9995844882631293,
+        "gamma": 0.10387091870310648,
+        "learning_rate": 0.28775258862088626,
+        "max_depth": 21,
+        "min_child_weight": 1,
+        "n_estimators": 1106,
+        "subsample": 0.8019369114916215
+    }
+}
